@@ -124,18 +124,39 @@ namespace Namespace
             return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
         }
 
-        public static async Task<Message> SendRooms(CallbackQuery callbackQuery, TelegramBotClient client)
+        public static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это комнаты ";
+
+            string[] photoUrls = new[]
+            {
+        "https://sun9-7.userapi.com/impg/HWrxyYZsRMXhCBEZPcPYug_sipMsHk1m_ftfng/1HSqaT9ew3M.jpg?size=1620x2160&quality=95&sign=b48f00a13ab3c98f3a4b8bd55fd26989&type=album",
+        "https://sun9-37.userapi.com/impg/1UkgIpp_5v0oGTDdjwgE3INl-cMdgjqR6h-gwA/aNQqlp9gk0E.jpg?size=1620x2160&quality=95&sign=d3f26b2ed967ba206c053def0e4e70a4&type=album",
+        "https://sun9-36.userapi.com/impg/f-rZT-Ge9IoX1hG9ysKv1juahU3plzT64OhKrg/9fmAPCjTIx0.jpg?size=1620x2160&quality=95&sign=22109c97c0c31ea3a01e2919b2997b54&type=album"
+    };
+
+            var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
+
+
             var keyboard = new InlineKeyboardMarkup(new[]
             {
-                new []
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
+        new[]
+        {
+            InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+        }
+    });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            // Send the media group
+            await client.SendMediaGroupAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                media: mediaGroup
+            );
+
+            // Send the inline keyboard separately since SendMediaGroupAsync does not support reply markup
+            await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "Выберите опцию:",
+                replyMarkup: keyboard
+            );
         }
 
         public static async Task<Message> SendFeatures(CallbackQuery callbackQuery, TelegramBotClient client)
