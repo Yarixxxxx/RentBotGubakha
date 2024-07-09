@@ -92,13 +92,13 @@ namespace Namespace
 
         public static async Task<Message> SendOnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фотки, выберите свой гендер: ";
+            string text = "Это фото, выберите вид: ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
                     InlineKeyboardButton.WithCallbackData("Фото комнат", "rooms_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото фичей", "features_photos"),
+                    InlineKeyboardButton.WithCallbackData("Фото развлечений", "features_photos"),
                     InlineKeyboardButton.WithCallbackData("Фото с улицы", "exterior_photos")
                 },
                 new []
@@ -112,7 +112,7 @@ namespace Namespace
 
         public static async Task<Message> SendOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это видосики ";
+            string text = "Это видео ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -145,13 +145,11 @@ namespace Namespace
         }
     });
 
-            // Send the media group
             await client.SendMediaGroupAsync(
                 chatId: callbackQuery.Message.Chat.Id,
                 media: mediaGroup
             );
 
-            // Send the inline keyboard separately since SendMediaGroupAsync does not support reply markup
             await client.SendTextMessageAsync(
                 chatId: callbackQuery.Message.Chat.Id,
                 text: "Выберите опцию:",
@@ -161,7 +159,7 @@ namespace Namespace
 
         public static async Task<Message> SendFeatures(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фичи ";
+            string text = "Это развлечения ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -199,7 +197,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Снять ее", "rent")
+                    InlineKeyboardButton.WithCallbackData("Снять", "rent")
                 },
                 new []
                 {
@@ -334,7 +332,7 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Schedule(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Свободные даты для дома 2";
+            string text = "Свободные даты дома 2";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -348,7 +346,7 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2PhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Фото и видео для дома 2";
+            string text = "Фото и видео дома 2";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -367,13 +365,13 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2OnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фотки для дома 2: ";
+            string text = "Это фото дома 2: ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
                     InlineKeyboardButton.WithCallbackData("Фото комнат", "house2_rooms_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото фичей", "house2_features_photos"),
+                    InlineKeyboardButton.WithCallbackData("Фото развлечений", "house2_features_photos"),
                     InlineKeyboardButton.WithCallbackData("Фото с улицы", "house2_exterior_photos")
                 },
                 new []
@@ -387,7 +385,7 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2OnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это видосики для дома 2";
+            string text = "Это видео дома 2";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -441,7 +439,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Снять ее", "house2_rent")
+                    InlineKeyboardButton.WithCallbackData("Снять", "house2_rent")
                 },
                 new []
                 {
@@ -516,7 +514,7 @@ namespace Namespace
         // New methods for "квартира"
         public static async Task<Message> SendApartment(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Ссылка на бота 'Квартира'";
+            string text = "Замечательная квартира в Губахе!";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -565,7 +563,7 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentSchedule(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Свободные даты для квартиры";
+            string text = "Свободные даты квартиры";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -579,7 +577,7 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentPhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Фото и видео для квартиры";
+            string text = "Фото и видео квартиры";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -598,13 +596,13 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentOnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фотки для квартиры: ";
+            string text = "Это фото квартиры: ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
                     InlineKeyboardButton.WithCallbackData("Фото комнат", "apartment_rooms_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото фичей", "apartment_features_photos"),
+                    InlineKeyboardButton.WithCallbackData("Фото развлечений", "apartment_features_photos"),
                     InlineKeyboardButton.WithCallbackData("Фото с улицы", "apartment_exterior_photos")
                 },
                 new []
@@ -618,7 +616,7 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это видосики для квартиры";
+            string text = "Это видео квартиры";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -632,7 +630,7 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentRooms(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это комнаты для квартиры";
+            string text = "Это комнаты квартиры";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -646,7 +644,7 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentFeatures(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фичи для квартиры";
+            string text = "Это развлечения квартиры";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -660,7 +658,7 @@ namespace Namespace
 
         public static async Task<Message> SendApartmentExterior(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это внешний облик для квартиры";
+            string text = "Это внешний облик квартиры";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -712,7 +710,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Снять ее", "apartment_rent")
+                    InlineKeyboardButton.WithCallbackData("Снять", "apartment_rent")
                 },
                 new []
                 {

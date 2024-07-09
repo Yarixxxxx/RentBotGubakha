@@ -86,7 +86,7 @@ namespace Namespace
                 case "description":
                     var descriptionMessage = await client.SendPhotoAsync(
                         chatId: chatId,
-                        photo: InputFile.FromUri("https://github.com/Yarixxxxx/Photos/blob/main/house.jpg?raw=true"));
+                        photo: InputFile.FromUri("https://sun9-66.userapi.com/impg/E6gWP5zmvj4YIk3V22h7wEW4dNYgzbF2GKiOVA/OK_g5M6mB9E.jpg?size=1620x2160&quality=95&sign=8fd820e21070f17f693c3548418f465e&type=album"));
                     AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, new[] { descriptionMessage.MessageId });
                     await SendDescriptionMenu(callbackQuery, client);
                     break;
@@ -156,6 +156,10 @@ namespace Namespace
                     break;
 
                 case "house2_description":
+                    var descriptionMessage2 = await client.SendPhotoAsync(
+                       chatId: chatId,
+                       photo: InputFile.FromUri("https://sun9-57.userapi.com/impg/4USiQbZMyAi7y3PY0IgrMsIVAh92O9AE2I0sNA/6Hq-jZmj0nU.jpg?size=1620x2160&quality=95&sign=9c17c508574b4be7d232af1cfafdce04&type=album"));
+                    AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, new[] { descriptionMessage2.MessageId });
                     await SendHouse2Description(callbackQuery, client);
                     break;
 
@@ -322,8 +326,9 @@ namespace Namespace
                 "https://sun9-76.userapi.com/impg/hglk0DGil57DahXVYWd7a6Egg-5rEaLLqieM-A/twwG_hJOh2Y.jpg?size=1620x2160&quality=95&sign=9dc05fda902bc711da3059d72ccf586f&type=album",
             "https://sun9-63.userapi.com/impg/Y7ReHV7j27tPRWsXzdg4nK0LuhVs9QrZoTypBw/0wCag1WzJiI.jpg?size=1620x2160&quality=95&sign=ccd95962c3775f430d1c0d8834e87be9&type=album",
             "https://sun9-38.userapi.com/impg/RdLQC2h0czNrplosdUxVsMt7wYJFDpdN2vcDGg/JqNq2VTCdfo.jpg?size=1620x2160&quality=95&sign=0ed762707e802245c332c77fcaf117ce&type=album",
-            "https://sun9-32.userapi.com/impg/NplEbSLzs1bIPaLmJTvRoLUatBySuYlugINzZA/K_eilLgWPMQ.jpg?size=1620x2160&quality=95&sign=431a2418e7ded8d0ca879209abab17cf&type=album"};
-
+            "https://sun9-32.userapi.com/impg/NplEbSLzs1bIPaLmJTvRoLUatBySuYlugINzZA/K_eilLgWPMQ.jpg?size=1620x2160&quality=95&sign=431a2418e7ded8d0ca879209abab17cf&type=album",
+            "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album", };
+            
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
             var sentMessages = await client.SendMediaGroupAsync(
@@ -353,8 +358,7 @@ namespace Namespace
             string[] photoUrls = new[]
             {
                 "https://sun9-65.userapi.com/impg/0AuAHSofgHV__Koaz9EoV8Bk0WbW4J1U_xIvLw/Ri_By7Z23AA.jpg?size=1620x2160&quality=95&sign=2225ca18b57bf761ef60d7366db4b825&type=album",
-                "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
-            };
+                };
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
@@ -424,7 +428,9 @@ namespace Namespace
             "https://sun9-36.userapi.com/impg/YFLOwvasKU8g3GI6DXYHtwyFac6r2S1OD_v0hQ/c7yqpnyA6yM.jpg?size=1620x2160&quality=95&sign=088ac6af2df800c9f7fdee9fe8d2ba21&type=album",
             "https://sun9-30.userapi.com/impg/4J66aMCbo0_FyN0GBHAoWjG_yDuHFm9mNNDhzA/u3BbggLKtyk.jpg?size=1620x2160&quality=95&sign=8c4ae8fe5df8ff7ad9747a90133b9602&type=album",
             "https://sun9-15.userapi.com/impg/GW51mmZpFE3DQJx_7qUw4x2shx1lzpMFVuYpGw/Dr53X4oDPxg.jpg?size=1620x2160&quality=95&sign=e4a47aae94003aef28d66c1a64a80c16&type=album",
-            "https://sun9-39.userapi.com/impg/J_nfloHymUaUnphpNoJOVNr_LPX3iTs0Jh66dQ/wjrKOr6Gu4Q.jpg?size=2560x1920&quality=95&sign=c31cc5ba8cc0e3f95f6d3c773337fa12&type=album"};
+            "https://sun9-39.userapi.com/impg/J_nfloHymUaUnphpNoJOVNr_LPX3iTs0Jh66dQ/wjrKOr6Gu4Q.jpg?size=2560x1920&quality=95&sign=c31cc5ba8cc0e3f95f6d3c773337fa12&type=album",
+            "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
+            };
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
@@ -454,9 +460,7 @@ namespace Namespace
         {
             string[] photoUrls = new[]
             {
-                "https://sun9-68.userapi.com/impg/7QT89P9-GgIo-TKyCfwmry94eS1NDOrNSj056w/Q2dE1Gfk-CY.jpg?size=1620x2160&quality=95&sign=b0a382787d5dc80d0712fd06d8aa833e&type=album",
-                "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
-            };
+                "https://sun9-68.userapi.com/impg/7QT89P9-GgIo-TKyCfwmry94eS1NDOrNSj056w/Q2dE1Gfk-CY.jpg?size=1620x2160&quality=95&sign=b0a382787d5dc80d0712fd06d8aa833e&type=album",};
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
