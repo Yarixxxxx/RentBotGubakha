@@ -399,47 +399,7 @@ namespace Namespace
             return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
         }
 
-        public static async Task<Message> SendHouse2Rooms(CallbackQuery callbackQuery, TelegramBotClient client)
-        {
-            string text = "Это комнаты для дома 2";
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new []
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
-
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
-        }
-
-        public static async Task<Message> SendHouse2Features(CallbackQuery callbackQuery, TelegramBotClient client)
-        {
-            string text = "Это фичи для дома 2";
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new []
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
-
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
-        }
-
-        public static async Task<Message> SendHouse2Exterior(CallbackQuery callbackQuery, TelegramBotClient client)
-        {
-            string text = "Это внешний облик для дома 2";
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new []
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
-
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
-        }
+        
 
         public static async Task<Message> SendHouse2Location(CallbackQuery callbackQuery, TelegramBotClient client)
         {
