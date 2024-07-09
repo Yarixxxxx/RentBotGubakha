@@ -35,7 +35,7 @@ namespace Namespace
 
         public static async Task<Message> SendDescriptionMenu(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string fullDescription = "Описываем дом";
+            string fullDescription = "Описывание дома";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -283,7 +283,7 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Ссылка на бота 'Дом2'";
+            string text = "Дом 2";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
