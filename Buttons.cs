@@ -224,7 +224,7 @@ namespace Namespace
 
         public static async Task<Message> SendSchedule(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Посмотрите расписание, найдите подходящий для себя день и договоритесь с владельцем - 899999999999 \n https://calendar.google.com/calendar/u/0/r/week/2024/2/27?pli=1";
+            string text = "Посмотрите расписание по ссылке: \n https://calendar.yandex.ru/embed/week?&layer_ids=29795555&tz_id=Asia/Yekaterinburg&layer_names=Без названия  \n Найдите подходящий для себя день и договоритесь с владельцем - 89999999999";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -246,8 +246,8 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад", "go_back")
                 }
             });
-            await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89922210955", "Yaroslav");
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+        
+            return await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89922210955", "Yaroslav", replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendLocation(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -259,7 +259,7 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад", "go_back")
                 }
             });
-            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 16.45, 34.76, replyMarkup: keyboard);
+            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863868, 57.584426, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendOtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -332,7 +332,7 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Schedule(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Свободные даты дома 2";
+            string text = "Посмотрите расписание по ссылке: \n https://calendar.yandex.ru/embed/week?&layer_ids=29795555&tz_id=Asia/Yekaterinburg&layer_names=Без названия  \n Найдите подходящий для себя день и договоритесь с владельцем - 89999999999";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -409,7 +409,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 16.45, 34.76, replyMarkup: keyboard);
+            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863757, 57.587193, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2FAQ(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -499,7 +499,7 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Rent(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Посмотрите расписание, найдите подходящий для себя день и договоритесь с владельцем дома 2 - 899999999999 \n https://calendar.google.com/calendar/u/0/r/week/2024/2/27?pli=1";
+            string text = "Посмотрите расписание по ссылке: \n https://calendar.yandex.ru/embed/week?&layer_ids=29795555&tz_id=Asia/Yekaterinburg&layer_names=Без названия  \n Найдите подходящий для себя день и договоритесь с владельцем - 89999999999";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
@@ -511,7 +511,6 @@ namespace Namespace
             return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
         }
 
-        // New methods for "квартира"
         public static async Task<Message> SendApartment(CallbackQuery callbackQuery, TelegramBotClient client)
         {
             string text = "Замечательная квартира в Губахе!";
