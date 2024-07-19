@@ -69,13 +69,106 @@ namespace Namespace
 
                     if (message != null && message.Text == "/start")
                     {
-                        await SendMainMenu(message, client);
+                        await SendWelcomeMessage(message, client);
                         start = 1;
                     }
                     offset = update.Id + 1;
                 }
                 await Task.Delay(700);
             }
+        }
+
+        static async Task SendWelcomeMessage(Message message, TelegramBotClient client)
+        {
+            var chatId = message.Chat.Id;
+            var welcomeText = "Добро пожаловать на курорт Губаха! Выберите дом, с которым находитесь рядом...\n\n1 дом - Краснооктябрьская, 12\n2 дом - Краснооктябрьская, 6\n\nДома отмечены на карте ниже";
+            var mapImageUrl = "https://sun9-22.userapi.com/impg/Janx-X0domWG_sKW4lQWO79EwTgCO7cDTvLpuA/l5f_FxS-yIE.jpg?size=796x575&quality=96&sign=2f3663ce856a900b1677bae15629282b&type=album"; 
+            await client.SendPhotoAsync(
+                chatId: chatId,
+                photo: InputFile.FromUri(mapImageUrl),
+                caption: welcomeText,
+                replyMarkup: new InlineKeyboardMarkup(new[]
+                {
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData("Дом 1", "description"),
+                        InlineKeyboardButton.WithCallbackData("Дом 2", "house2_description")
+                    }
+                })
+            );
+        }
+
+        static void AddToPhotoMessages(Dictionary<long, List<int>> photoMessages, long chatId, int[] messageIds)
+        {
+            if (!photoMessages.ContainsKey(chatId))
+            {
+                photoMessages[chatId] = new List<int>();
+            }
+            photoMessages[chatId].AddRange(messageIds);
+        }
+
+        static async Task DeleteAllPhotoMessages(TelegramBotClient client, long chatId, Dictionary<long, List<int>> photoMessages)
+        {
+            if (photoMessages.ContainsKey(chatId))
+            {
+                foreach (var messageId in photoMessages[chatId])
+                {
+                    await DeleteMessageSafeAsync(client, chatId, messageId);
+                }
+                photoMessages[chatId].Clear();
+            }
+        }
+
+        static async Task DeleteMessageSafeAsync(TelegramBotClient client, long chatId, int messageId)
+        {
+            try
+            {
+                await client.DeleteMessageAsync(chatId, messageId);
+            }
+            catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message to delete not found"))
+            {
+                Console.WriteLine($"Message {messageId} not found: {ex.Message}");
+            }
+        }
+
+        static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
+        {
+            string[] photoUrls = new[]
+            {
+                "https://sun9-7.userapi.com/impg/HWrxyYZsRMXhCBEZPcPYug_sipMsHk1m_ftfng/1HSqaT9ew3M.jpg?size=1620x2160&quality=95&sign=b48f00a13ab3c98f3a4b8bd55fd26989&type=album",
+                "https://sun9-37.userapi.com/impg/1UkgIpp_5v0oGTDdjwgE3INl-cMdgjqR6h-gwA/aNQqlp9gk0E.jpg?size=1620x2160&quality=95&sign=d3f26b2ed967ba206c053def0e4e70a4&type=album",
+                "https://sun9-36.userapi.com/impg/f-rZT-Ge9IoX1hG9ysKv1juahU3plzT64OhKrg/9fmAPCjTIx0.jpg?size=1620x2160&quality=95&sign=22109c97c0c31ea3a01e2919b2997b54&type=album",
+                "https://sun9-8.userapi.com/impg/RZWJ44m9Sue7ifF8cwkePcIbWl2-g8oBlvHNXw/yCtQRSJYmSs.jpg?size=1620x2160&quality=95&sign=5f60b35e5045e46aee446496805ae683&type=album",
+                "https://sun9-29.userapi.com/impg/dmEL81ATjmzidn3prUO26_y5fclR-G0K53VpSw/PY1CrM-XVu4.jpg?size=1620x2160&quality=95&sign=de0a66729a7f83a35dc2665d54c79154&type=album",
+                "https://sun9-76.userapi.com/impg/hglk0DGil57DahXVYWd7a6Egg-5rEaLLqieM-A/twwG_hJOh2Y.jpg?size=1620x2160&quality=95&sign=9dc05fda902bc711da3059d72ccf586f&type=album",
+                "https://sun9-63.userapi.com/impg/Y7ReHV7j27tPRWsXzdg4nK0LuhVs9QrZoTypBw/0wCag1WzJiI.jpg?size=1620x2160&quality=95&sign=ccd95962c3775f430d1c0d8834e87be9&type=album",
+                "https://sun9-38.userapi.com/impg/RdLQC2h0czNrplosdUxVsMt7wYJFDpdN2vcDGg/JqNq2VTCdfo.jpg?size=1620x2160&quality=95&sign=0ed762707e802245c332c77fcaf117ce&type=album",
+                "https://sun9-32.userapi.com/impg/NplEbSLzs1bIPaLmJTvRoLUatBySuYlugINzZA/K_eilLgWPMQ.jpg?size=1620x2160&quality=95&sign=431a2418e7ded8d0ca879209abab17cf&type=album",
+                "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
+            };
+
+            var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
+
+            var sentMessages = await client.SendMediaGroupAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                media: mediaGroup
+            );
+
+            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+
+            var keyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                }
+            });
+
+            await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "Фото комнат",
+                replyMarkup: keyboard
+            );
         }
 
         static async Task HandleAction(string action, CallbackQuery callbackQuery, TelegramBotClient client, string chatId, Dictionary<long, List<int>> photoMessages)
@@ -284,79 +377,6 @@ namespace Namespace
             }
         }
 
-        static void AddToPhotoMessages(Dictionary<long, List<int>> photoMessages, long chatId, int[] messageIds)
-        {
-            if (!photoMessages.ContainsKey(chatId))
-            {
-                photoMessages[chatId] = new List<int>();
-            }
-            photoMessages[chatId].AddRange(messageIds);
-        }
-
-        static async Task DeleteAllPhotoMessages(TelegramBotClient client, long chatId, Dictionary<long, List<int>> photoMessages)
-        {
-            if (photoMessages.ContainsKey(chatId))
-            {
-                foreach (var messageId in photoMessages[chatId])
-                {
-                    await DeleteMessageSafeAsync(client, chatId, messageId);
-                }
-                photoMessages[chatId].Clear();
-            }
-        }
-
-        static async Task DeleteMessageSafeAsync(TelegramBotClient client, long chatId, int messageId)
-        {
-            try
-            {
-                await client.DeleteMessageAsync(chatId, messageId);
-            }
-            catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message to delete not found"))
-            {
-                Console.WriteLine($"Message {messageId} not found: {ex.Message}");
-            }
-        }
-
-        static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
-        {
-            string[] photoUrls = new[]
-            {
-                "https://sun9-7.userapi.com/impg/HWrxyYZsRMXhCBEZPcPYug_sipMsHk1m_ftfng/1HSqaT9ew3M.jpg?size=1620x2160&quality=95&sign=b48f00a13ab3c98f3a4b8bd55fd26989&type=album",
-                "https://sun9-37.userapi.com/impg/1UkgIpp_5v0oGTDdjwgE3INl-cMdgjqR6h-gwA/aNQqlp9gk0E.jpg?size=1620x2160&quality=95&sign=d3f26b2ed967ba206c053def0e4e70a4&type=album",
-                "https://sun9-36.userapi.com/impg/f-rZT-Ge9IoX1hG9ysKv1juahU3plzT64OhKrg/9fmAPCjTIx0.jpg?size=1620x2160&quality=95&sign=22109c97c0c31ea3a01e2919b2997b54&type=album",
-                "https://sun9-8.userapi.com/impg/RZWJ44m9Sue7ifF8cwkePcIbWl2-g8oBlvHNXw/yCtQRSJYmSs.jpg?size=1620x2160&quality=95&sign=5f60b35e5045e46aee446496805ae683&type=album",
-                "https://sun9-29.userapi.com/impg/dmEL81ATjmzidn3prUO26_y5fclR-G0K53VpSw/PY1CrM-XVu4.jpg?size=1620x2160&quality=95&sign=de0a66729a7f83a35dc2665d54c79154&type=album",
-                "https://sun9-76.userapi.com/impg/hglk0DGil57DahXVYWd7a6Egg-5rEaLLqieM-A/twwG_hJOh2Y.jpg?size=1620x2160&quality=95&sign=9dc05fda902bc711da3059d72ccf586f&type=album",
-                "https://sun9-63.userapi.com/impg/Y7ReHV7j27tPRWsXzdg4nK0LuhVs9QrZoTypBw/0wCag1WzJiI.jpg?size=1620x2160&quality=95&sign=ccd95962c3775f430d1c0d8834e87be9&type=album",
-                "https://sun9-38.userapi.com/impg/RdLQC2h0czNrplosdUxVsMt7wYJFDpdN2vcDGg/JqNq2VTCdfo.jpg?size=1620x2160&quality=95&sign=0ed762707e802245c332c77fcaf117ce&type=album",
-                "https://sun9-32.userapi.com/impg/NplEbSLzs1bIPaLmJTvRoLUatBySuYlugINzZA/K_eilLgWPMQ.jpg?size=1620x2160&quality=95&sign=431a2418e7ded8d0ca879209abab17cf&type=album",
-                "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
-            };
-
-            var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
-
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
-                media: mediaGroup
-            );
-
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
-
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
-
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
-                text: "Фото комнат",
-                replyMarkup: keyboard
-            );
-        }
-
         static async Task SendFeatures(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
         {
             string[] photoUrls = new[]
@@ -523,7 +543,5 @@ namespace Namespace
                 replyMarkup: keyboard
             );
         }
-
-
     }
 }

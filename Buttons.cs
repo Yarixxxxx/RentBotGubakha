@@ -270,7 +270,6 @@ namespace Namespace
                 new []
                 {
                     InlineKeyboardButton.WithCallbackData("Дом 2", "house2"),
-                    InlineKeyboardButton.WithCallbackData("Квартира", "apartment")
                 },
                 new []
                 {
@@ -452,13 +451,12 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2OtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Другие варианты аренды для дома 2";
+            string text = "Другие варианты аренды";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
                     InlineKeyboardButton.WithCallbackData("Дом 1", "house"),
-                    InlineKeyboardButton.WithCallbackData("Квартира", "apartment")
                 },
                 new []
                 {
