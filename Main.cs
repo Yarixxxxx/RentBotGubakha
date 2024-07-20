@@ -81,8 +81,8 @@ namespace Namespace
         static async Task SendWelcomeMessage(Message message, TelegramBotClient client)
         {
             var chatId = message.Chat.Id;
-            var welcomeText = "Добро пожаловать на курорт Губаха! Выберите дом, с которым находитесь рядом...\n\n1 дом - Краснооктябрьская, 12\n2 дом - Краснооктябрьская, 6\n\nДома отмечены на карте ниже";
-            var mapImageUrl = "https://sun9-22.userapi.com/impg/Janx-X0domWG_sKW4lQWO79EwTgCO7cDTvLpuA/l5f_FxS-yIE.jpg?size=796x575&quality=96&sign=2f3663ce856a900b1677bae15629282b&type=album"; 
+            var welcomeText = "Добро пожаловать на курорт Губаха! \n1 дом - Краснооктябрьская, 12\n2 дом - Краснооктябрьская, 6\n\nДома отмечены на карте выше \nНажмите снизу на кнопку дома, расположенного рядом с вами\n";
+            var mapImageUrl = "https://sun9-22.userapi.com/impg/Janx-X0domWG_sKW4lQWO79EwTgCO7cDTvLpuA/l5f_FxS-yIE.jpg?size=796x575&quality=96&sign=2f3663ce856a900b1677bae15629282b&type=album";
             await client.SendPhotoAsync(
                 chatId: chatId,
                 photo: InputFile.FromUri(mapImageUrl),
@@ -91,11 +91,12 @@ namespace Namespace
                 {
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("Дом 1", "description"),
-                        InlineKeyboardButton.WithCallbackData("Дом 2", "house2_description")
+                        InlineKeyboardButton.WithCallbackData("Дом 1", "house"),
+                        InlineKeyboardButton.WithCallbackData("Дом 2", "house2")
                     }
                 })
             );
+            await DeleteMessageSafeAsync(client, chatId, message.MessageId);
         }
 
         static void AddToPhotoMessages(Dictionary<long, List<int>> photoMessages, long chatId, int[] messageIds)
@@ -129,7 +130,12 @@ namespace Namespace
             {
                 Console.WriteLine($"Message {messageId} not found: {ex.Message}");
             }
+            catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message can't be deleted for everyone"))
+            {
+                Console.WriteLine($"Message {messageId} can't be deleted for everyone: {ex.Message}");
+            }
         }
+
 
         static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
         {
@@ -349,18 +355,6 @@ namespace Namespace
 
                 case "apartment_only_videos":
                     await SendApartmentOnlyVideos(callbackQuery, client);
-                    break;
-
-                case "apartment_rooms_photos":
-                    await SendApartmentRooms(callbackQuery, client);
-                    break;
-
-                case "apartment_features_photos":
-                    await SendApartmentFeatures(callbackQuery, client);
-                    break;
-
-                case "apartment_exterior_photos":
-                    await SendApartmentExterior(callbackQuery, client);
                     break;
 
                 case "apartment_telephone":

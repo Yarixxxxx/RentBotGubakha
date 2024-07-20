@@ -259,7 +259,7 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад", "go_back")
                 }
             });
-            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863868, 57.584426, replyMarkup: keyboard);
+            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863710, 57.585971, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendOtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
