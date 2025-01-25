@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -9,24 +8,28 @@ namespace Namespace
     {
         public static async Task<Message> SendMainMenu(Message message, TelegramBotClient client)
         {
-            string description = "Очаровательный дом в Губахе около склона на 10 человек. Прекрасное место для отдыха!";
+            string description = "🏔 Очаровательный дом в Губахе около склона на 10 человек. Прекрасное место для отдыха! 🏔";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Описание дома", "description"),
-                    InlineKeyboardButton.WithCallbackData("Свободные даты", "schedule")
+                    InlineKeyboardButton.WithCallbackData("Описание дома 🏠", "description"),
+                    InlineKeyboardButton.WithCallbackData("Свободные даты 📆", "schedule")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото и видео", "photos_and_videos"),
-                    InlineKeyboardButton.WithCallbackData("Геолокация", "location"),
-                    InlineKeyboardButton.WithCallbackData("FAQ", "faq")
+                    InlineKeyboardButton.WithCallbackData(" Контент 🖼️", "photos_and_videos"),
+                    InlineKeyboardButton.WithCallbackData(" Локация📍", "location"),
+                    InlineKeyboardButton.WithCallbackData("  FAQ ❓", "faq")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Связь с арендодателем", "contact_landlord"),
-                    InlineKeyboardButton.WithCallbackData("Другие варианты аренды", "other_options")
+                    InlineKeyboardButton.WithCallbackData("Владелец 👨", "contact_landlord"),
+                    InlineKeyboardButton.WithCallbackData("Другой дом 🏡", "other_options")
+                },
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData("Помощь 🚑", "help"),
                 }
             });
 
@@ -35,21 +38,40 @@ namespace Namespace
 
         public static async Task<Message> SendDescriptionMenu(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string fullDescription = "Описывание дома";
+            string fullDescription = "🏠 Уютный деревянный двухэтажный дом: 🏠" +
+                "\n\n • 8 человек" +
+                "\n • Участок 10 соток" +
+                "\n • Дом 70 м^2" +
+                "\n • Горнолыжная база через 250 метров" +
+                "\n • Рядом автобусная остановка" +
+                "\n • Электричество, отопление, канализация" +
+                "\n • Холодильник, посуда, плита, микроволновка, фен, утюг, душ" +
+                "\n • Wi-Fi, Smart TV" +
+                "\n • Места для сноубордов" +
+                "\n • Парковка" +
+                "\n • Веранда" +
+                "\n\n⛔ Запрещается: ⛔" +
+                "\n • Курить внутри дома" +
+                "\n • Заселяться с животными" +
+                "\n\n⚠️ Важно: ⚠️" +
+                "\n • Залог 5 тысяч рублей" +
+                "\n • Предоплата не возвращается и входит в стоимость дома!" +
+                "\n • Заезд после 14:00, выезд до 11:00";
+
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото и видео", "photos_and_videos"),
-                    InlineKeyboardButton.WithCallbackData("FAQ", "faq")
+                    InlineKeyboardButton.WithCallbackData("Фото и видео 📷", "photos_and_videos"),
+                    InlineKeyboardButton.WithCallbackData("  FAQ ❓", "faq")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Связь с арендодателем", "contact_landlord")
+                    InlineKeyboardButton.WithCallbackData("Владелец 👨", "contact_landlord")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -58,13 +80,13 @@ namespace Namespace
 
         public static async Task<Message> SendFAQ(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string link = "https://docs.google.com/document/d/1ZuA6ER-39P7vX5Vxt3c6SEX6tHtZPgsp1ZyELsZxW2s/edit?usp=sharing";
-            string text_with_link = "Вы можете ознакомиться с часто задаваемыми вопросами " + link;
+            string link = "https://docs.google.com/document/d/1DltE02YZ3DGGuE62apAnWm_5F1lZfjWMIyVndHJLlj8/edit";
+            string text_with_link = "Вы можете ознакомиться с часто задаваемыми вопросами " + "\n\n" + link;
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -73,17 +95,17 @@ namespace Namespace
 
         public static async Task<Message> PhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Выберите вариант фото или видео";
+            string text = "Выберите фото или видео";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото", "only_photos"),
-                    InlineKeyboardButton.WithCallbackData("Видео", "only_videos")
+                    InlineKeyboardButton.WithCallbackData("Фото 🎞️", "only_photos"),
+                    InlineKeyboardButton.WithCallbackData("Видео 🎥", "only_videos")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -92,32 +114,17 @@ namespace Namespace
 
         public static async Task<Message> SendOnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фото, выберите вид: ";
+            string text = "Выберите тип фотографий: ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото комнат", "rooms_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото развлечений", "features_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото с улицы", "exterior_photos")
+                    InlineKeyboardButton.WithCallbackData("Фото комнат 🛏️", "rooms_photos"),
+                    InlineKeyboardButton.WithCallbackData("Фото с улицы 🏘️", "exterior_photos")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
-
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
-        }
-
-        public static async Task<Message> SendOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
-        {
-            string text = "Это видео ";
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new []
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -141,7 +148,7 @@ namespace Namespace
             {
         new[]
         {
-            InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+            InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
         }
     });
 
@@ -159,12 +166,12 @@ namespace Namespace
 
         public static async Task<Message> SendFeatures(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это развлечения ";
+            string text = "Фотографии развлечений ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -173,12 +180,12 @@ namespace Namespace
 
         public static async Task<Message> SendExterior(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это внешний облик ";
+            string text = "Фотографии с улицы";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -192,16 +199,16 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("По телефону", "telephone"),
-                    InlineKeyboardButton.WithCallbackData("По телеграму", "telegram")
+                    InlineKeyboardButton.WithCallbackData("По телефону 📞", "telephone"),
+                    //InlineKeyboardButton.WithCallbackData("По телеграму ➣", "telegram")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Снять", "rent")
+                    InlineKeyboardButton.WithCallbackData("Снять 🤝", "rent")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -210,12 +217,12 @@ namespace Namespace
 
         public static async Task<Message> SendTelephone(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "8999999999999";
+            string text = "Павел - 89024783356";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -224,12 +231,12 @@ namespace Namespace
 
         public static async Task<Message> SendSchedule(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Посмотрите расписание по ссылке: \n https://calendar.yandex.ru/embed/week?&layer_ids=29795555&tz_id=Asia/Yekaterinburg&layer_names=Без названия  \n Найдите подходящий для себя день и договоритесь с владельцем - 89999999999";
+            string text = " Посмотрите расписание по ссылке, найдите подходящий для себя день и договоритесь с владельцем 🤝 \n\nКонтакты владельца: Павел - 89024783356 \n\nРасписание: https://calendar.yandex.ru/embed/week?&layer_ids=29944937&tz_id=Asia/Yekaterinburg&layer_names=Мои события  ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -238,16 +245,15 @@ namespace Namespace
 
         public static async Task<Message> SendTelegram(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Вот контакт арендодателя";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
         
-            return await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89922210955", "Yaroslav", replyMarkup: keyboard);
+            return await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89024783356", "Павел", replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendLocation(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -256,7 +262,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
             return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863710, 57.585971, replyMarkup: keyboard);
@@ -264,16 +270,16 @@ namespace Namespace
 
         public static async Task<Message> SendOtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Также, вы можете рассмотреть следующие варианты для аренды";
+            string text = "Также, вы можете рассмотреть другой дом для аренды";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Дом 2", "house2"),
+                    InlineKeyboardButton.WithCallbackData("Дом - Краснооктябрьская, 6 🏡", "house2"),
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -282,24 +288,28 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Дом 2";
+            string text = "🏔 Многоместный одноэтажный дом с баней и бильярдом рядом с горнолыжной базой! 🏔";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Описание дома", "house2_description"),
-                    InlineKeyboardButton.WithCallbackData("Свободные даты", "house2_schedule")
+                    InlineKeyboardButton.WithCallbackData("Описание дома 🏠", "house2_description"),
+                    InlineKeyboardButton.WithCallbackData("Свободные даты 📆", "house2_schedule")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото и видео", "house2_photos_and_videos"),
-                    InlineKeyboardButton.WithCallbackData("Геолокация", "house2_location"),
-                    InlineKeyboardButton.WithCallbackData("FAQ", "house2_faq")
+                    InlineKeyboardButton.WithCallbackData(" Контент 🖼️", "house2_photos_and_videos"),
+                    InlineKeyboardButton.WithCallbackData(" Локация📍", "house2_location"),
+                    InlineKeyboardButton.WithCallbackData("  FAQ ❓", "house2_faq")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Связь с арендодателем", "house2_contact_landlord"),
-                    InlineKeyboardButton.WithCallbackData("Другие варианты аренды", "house2_other_options")
+                    InlineKeyboardButton.WithCallbackData("Владелец 👨", "house2_contact_landlord"),
+                    InlineKeyboardButton.WithCallbackData("Другой дом 🏡", "house2_other_options")
+                },
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData("Помощь 🚑", "house2_help"),
                 }
             });
 
@@ -308,21 +318,41 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Description(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string fullDescription = "Описание дома 2";
+            string fullDescription = "🏠 Комфортный деревянный одноэтажный дом: 🏠" +
+                "\n\n • 8 человек" +
+                "\n • Участок 10 соток" +
+                "\n • Дом 73 м^2" +
+                "\n • Горнолыжная база через 300 метров" +
+                "\n • Рядом автобусная остановка" +
+                "\n • Электричество, отопление, канализация" +
+                "\n • Холодильник, посуда, плита, микроволновка, фен, утюг, душ" +
+                "\n • Wi-Fi, Smart TV" +
+                "\n • Парковка" +
+                "\n • Веранда" +
+                "\n • Русская баня + американский бильярд" +
+                "\n\n⛔ Запрещается: ⛔" +
+                "\n • Курить внутри дома" +
+                "\n • Заселяться с животными" +
+                "\n\n⚠️ Важно: ⚠️" +
+                "\n • Залог 5 тысяч рублей" +
+                "\n • Предоплата не возвращается и входит в стоимость дома!" +
+                "\n • Заезд после 14:00, выезд до 11:00" +
+                "\n • За баню дополнительная плата";
+
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото и видео", "house2_photos_and_videos"),
-                    InlineKeyboardButton.WithCallbackData("FAQ", "house2_faq")
+                    InlineKeyboardButton.WithCallbackData("Фото и видео 📷", "house2_photos_and_videos"),
+                    InlineKeyboardButton.WithCallbackData("  FAQ ❓", "house2_faq")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Связь с арендодателем", "house2_contact_landlord")
+                    InlineKeyboardButton.WithCallbackData("Владелец 👨", "house2_contact_landlord")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -331,12 +361,13 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Schedule(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Посмотрите расписание по ссылке: \n https://calendar.yandex.ru/embed/week?&layer_ids=29795555&tz_id=Asia/Yekaterinburg&layer_names=Без названия  \n Найдите подходящий для себя день и договоритесь с владельцем - 89999999999";
+            string text = " Посмотрите расписание по ссылке, найдите подходящий для себя день и договоритесь с владельцем 🤝 \n\nКонтакты владельца: Павел - 89024783356 \n\nРасписание: https://calendar.yandex.ru/embed/week?&layer_ids=29944937&tz_id=Asia/Yekaterinburg&layer_names=Мои события  ";
+
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -345,17 +376,17 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2PhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Фото и видео дома 2";
+            string text = "Выберите фото или видео";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото", "house2_only_photos"),
-                    InlineKeyboardButton.WithCallbackData("Видео", "house2_only_videos")
+                    InlineKeyboardButton.WithCallbackData("Фото 🎞️", "house2_only_photos"),
+                    InlineKeyboardButton.WithCallbackData("Видео 🎥", "house2_only_videos")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -364,18 +395,17 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2OnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это фото дома 2: ";
+            string text = "Выберите тип фото: ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Фото комнат", "house2_rooms_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото развлечений", "house2_features_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото с улицы", "house2_exterior_photos")
+                    InlineKeyboardButton.WithCallbackData("Фото комнат 🛏️", "house2_rooms_photos"),
+                    InlineKeyboardButton.WithCallbackData("Фото с улицы 🏘️", "house2_exterior_photos")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -384,12 +414,12 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2OnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Это видео дома 2";
+            string text = "Видео дома";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -404,7 +434,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -413,13 +443,13 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2FAQ(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string link = "https://docs.google.com/document/d/1ZuA6ER-39P7vX5Vxt3c6SEX6tHtZPgsp1ZyELsZxW2s/edit?usp=sharing";
-            string text_with_link = "Вы можете ознакомиться с часто задаваемыми вопросами по дому 2 " + link;
+            string link = "https://docs.google.com/document/d/1svC_IspVQIQSVXP9Tgc4rD-2iRqTE2DoagKuXU6W8RQ/edit";
+            string text_with_link = "Вы можете ознакомиться с часто задаваемыми вопросами \n\n" + link;
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -428,21 +458,21 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Landlord(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Связаться с владельцем дома 2: ";
+            string text = "Связаться с владельцем: ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("По телефону", "house2_telephone"),
-                    InlineKeyboardButton.WithCallbackData("По телеграму", "house2_telegram")
+                    InlineKeyboardButton.WithCallbackData("По телефону 📞", "house2_telephone"),
+                    //InlineKeyboardButton.WithCallbackData("По телеграму ➣", "house2_telegram")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Снять", "house2_rent")
+                    InlineKeyboardButton.WithCallbackData("Снять 🤝", "house2_rent")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -451,16 +481,16 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2OtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Другие варианты аренды";
+            string text = "Также, вы можете рассмотреть другой дом для аренды";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Дом 1", "house"),
+                    InlineKeyboardButton.WithCallbackData("Дом - Краснооктябрьская, 12 🏡", "house"),
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -469,12 +499,12 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Telephone(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "8999999999999";
+            string text = "Павел - 89024783356";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -483,26 +513,24 @@ namespace Namespace
 
         public static async Task<Message> SendHouse2Telegram(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Вот контакт арендодателя для дома 2";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
-            await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89922210955", "Yaroslav");
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89024783356", "Павел", replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Rent(CallbackQuery callbackQuery, TelegramBotClient client)
         {
-            string text = "Посмотрите расписание по ссылке: \n https://calendar.yandex.ru/embed/week?&layer_ids=29795555&tz_id=Asia/Yekaterinburg&layer_names=Без названия  \n Найдите подходящий для себя день и договоритесь с владельцем - 89999999999";
+            string text = "Посмотрите расписание, найдите подходящий для себя день и договоритесь с владельцем - 89024783356 \n https://calendar.yandex.ru/embed/week?&layer_ids=29944937&tz_id=Asia/Yekaterinburg&layer_names=Мои события  ";
             var keyboard = new InlineKeyboardMarkup(new[]
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -551,7 +579,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -565,7 +593,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -584,7 +612,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -599,12 +627,12 @@ namespace Namespace
                 new []
                 {
                     InlineKeyboardButton.WithCallbackData("Фото комнат", "apartment_rooms_photos"),
-                    InlineKeyboardButton.WithCallbackData("Фото развлечений", "apartment_features_photos"),
+                    InlineKeyboardButton.WithCallbackData("Фото удобств", "apartment_features_photos"),
                     InlineKeyboardButton.WithCallbackData("Фото с улицы", "apartment_exterior_photos")
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -618,7 +646,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -632,7 +660,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -646,7 +674,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -660,7 +688,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -673,7 +701,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -688,7 +716,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -711,7 +739,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -730,7 +758,7 @@ namespace Namespace
                 },
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -744,7 +772,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -758,7 +786,7 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
             await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89922210955", "Yaroslav");
@@ -772,11 +800,26 @@ namespace Namespace
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
             return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
         }
+
+        public static async Task<Message> SendHelp(CallbackQuery callbackQuery, TelegramBotClient client)
+        {
+            string text = "По возникшим вопросам по поводу работы бота пишите [Матвею](https://t.me/e_ball_609) или [Ярославу](https://t.me/gertzprod)";
+            var keyboard = new InlineKeyboardMarkup(new[]
+            {
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
+                }
+            });
+
+            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
+        }
+
     }
 }
