@@ -1,19 +1,26 @@
-﻿using Telegram.Bot;
+﻿using Google.Apis.Sheets.v4.Data;
+using Google.Apis.Sheets.v4;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Util.Store;
+using System.Data;
 
 namespace Namespace
 {
     class MainClass : Buttons
     {
-        static int start = 0;
+        static Dictionary<long, int> rentButtonClicks = new Dictionary<long, int>();
+        static HashSet<string> uniqueUsers = new HashSet<string>();
+        static SheetsService sheetsService;
+
+        static Dictionary<long, List<int>> videoMessageIds = new Dictionary<long, List<int>>();
 
         static async Task Main(string[] args)
         {
+            InitializeGoogleSheets();
             var botToken = "6664930541:AAEzv45U0hCY3U_uuGIJssUe7V1VWKDfAcQ";
             var client = new TelegramBotClient(botToken);
             var offset = 0;
@@ -23,7 +30,6 @@ namespace Namespace
 
             Dictionary<long, Stack<string>> userActions = new Dictionary<long, Stack<string>>();
             Dictionary<long, List<int>> photoMessages = new Dictionary<long, List<int>>();
-
             while (isOK)
             {
                 var updates = await client.GetUpdatesAsync(offset);
@@ -37,6 +43,7 @@ namespace Namespace
                     if (callbackQuery != null)
                     {
                         var chatId = callbackQuery.Message.Chat.Id;
+                        var username = "@" + callbackQuery.From.Username;
 
                         if (photoMessages.ContainsKey(chatId) && photoMessages[chatId].Count > 0)
                         {
@@ -58,6 +65,15 @@ namespace Namespace
                             {
                                 await SendMainMenu(callbackQuery.Message, client);
                             }
+
+                            if (videoMessageIds.ContainsKey(chatId))
+                            {
+                                foreach (var msgId in videoMessageIds[chatId])
+                                {
+                                    await DeleteMessageSafeAsync(client, chatId, msgId);
+                                }
+                                videoMessageIds[chatId].Clear();
+                            }
                         }
                         else
                         {
@@ -70,7 +86,6 @@ namespace Namespace
                     if (message != null && message.Text == "/start")
                     {
                         await SendWelcomeMessage(message, client);
-                        start = 1;
                     }
                     offset = update.Id + 1;
                 }
@@ -81,8 +96,8 @@ namespace Namespace
         static async Task SendWelcomeMessage(Message message, TelegramBotClient client)
         {
             var chatId = message.Chat.Id;
-            var welcomeText = "Добро пожаловать на курорт Губаха! \n1 дом - Краснооктябрьская, 12\n2 дом - Краснооктябрьская, 6\n\nДома отмечены на карте выше \nНажмите снизу на кнопку дома, расположенного рядом с вами\n";
-            var mapImageUrl = "https://sun9-22.userapi.com/impg/Janx-X0domWG_sKW4lQWO79EwTgCO7cDTvLpuA/l5f_FxS-yIE.jpg?size=796x575&quality=96&sign=2f3663ce856a900b1677bae15629282b&type=album";
+            var welcomeText = "⛷️🏠🏂 Добро пожаловать в Губаху! ⛷️🏠🏂 \n\nДля начала выберите дом, расположенный рядом с вами:\n\n1 дом - желтый (Краснооктябрьская, 6)\n2 дом - коричневый (Краснооктябрьская, 12)\n\nНажмите на кнопку для выбора дома";
+            var mapImageUrl = "https://sun9-70.userapi.com/impg/doJM9P55crDMijXqswRzmVBZMAwp22-5570ajQ/sDEl6SxsXSE.jpg?size=2094x1657&quality=96&sign=397a5a1593b85a7a4612b8ae8641a832&type=album";
             await client.SendPhotoAsync(
                 chatId: chatId,
                 photo: InputFile.FromUri(mapImageUrl),
@@ -91,12 +106,56 @@ namespace Namespace
                 {
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("Дом 1", "house"),
-                        InlineKeyboardButton.WithCallbackData("Дом 2", "house2")
+                        InlineKeyboardButton.WithCallbackData("Дом 1", "house2"),
+                        InlineKeyboardButton.WithCallbackData("Дом 2", "house")
                     }
                 })
             );
             await DeleteMessageSafeAsync(client, chatId, message.MessageId);
+        }
+
+        static void InitializeGoogleSheets()
+        {
+            string[] Scopes = { SheetsService.Scope.Spreadsheets };
+            string ApplicationName = "Telegram Bot Google Sheets Integration";
+
+            UserCredential credential;
+            using (var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+            {
+                string credPath = "token.json";
+                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.Load(stream).Secrets,
+                    Scopes,
+                    "user",
+                    CancellationToken.None,
+                    new FileDataStore(credPath, true)).Result;
+                Console.WriteLine("Credential file saved to: " + credPath);
+            }
+
+            sheetsService = new SheetsService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = ApplicationName,
+            });
+
+            InitializeSheetHeaders();
+        }
+
+        static async Task InitializeSheetHeaders()
+        {
+            var spreadsheetId = "1q7CAgj_Gp_wEcFHA_1Fde5jo-IXIZeKPgkjXicdfADU";
+            var range = "Лист1!A1:С1";
+            var headerValues = new List<IList<object>> {
+        new List<object> { "Время", "Идентификатор", "Действие"}
+    };
+
+            var valueRange = new ValueRange { Values = headerValues };
+
+            var updateRequest = sheetsService.Spreadsheets.Values.Update(valueRange, spreadsheetId, range);
+            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+
+            await updateRequest.ExecuteAsync();
+            Console.WriteLine("Sheet headers initialized.");
         }
 
         static void AddToPhotoMessages(Dictionary<long, List<int>> photoMessages, long chatId, int[] messageIds)
@@ -136,47 +195,6 @@ namespace Namespace
             }
         }
 
-
-        static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
-        {
-            string[] photoUrls = new[]
-            {
-                "https://sun9-7.userapi.com/impg/HWrxyYZsRMXhCBEZPcPYug_sipMsHk1m_ftfng/1HSqaT9ew3M.jpg?size=1620x2160&quality=95&sign=b48f00a13ab3c98f3a4b8bd55fd26989&type=album",
-                "https://sun9-37.userapi.com/impg/1UkgIpp_5v0oGTDdjwgE3INl-cMdgjqR6h-gwA/aNQqlp9gk0E.jpg?size=1620x2160&quality=95&sign=d3f26b2ed967ba206c053def0e4e70a4&type=album",
-                "https://sun9-36.userapi.com/impg/f-rZT-Ge9IoX1hG9ysKv1juahU3plzT64OhKrg/9fmAPCjTIx0.jpg?size=1620x2160&quality=95&sign=22109c97c0c31ea3a01e2919b2997b54&type=album",
-                "https://sun9-8.userapi.com/impg/RZWJ44m9Sue7ifF8cwkePcIbWl2-g8oBlvHNXw/yCtQRSJYmSs.jpg?size=1620x2160&quality=95&sign=5f60b35e5045e46aee446496805ae683&type=album",
-                "https://sun9-29.userapi.com/impg/dmEL81ATjmzidn3prUO26_y5fclR-G0K53VpSw/PY1CrM-XVu4.jpg?size=1620x2160&quality=95&sign=de0a66729a7f83a35dc2665d54c79154&type=album",
-                "https://sun9-76.userapi.com/impg/hglk0DGil57DahXVYWd7a6Egg-5rEaLLqieM-A/twwG_hJOh2Y.jpg?size=1620x2160&quality=95&sign=9dc05fda902bc711da3059d72ccf586f&type=album",
-                "https://sun9-63.userapi.com/impg/Y7ReHV7j27tPRWsXzdg4nK0LuhVs9QrZoTypBw/0wCag1WzJiI.jpg?size=1620x2160&quality=95&sign=ccd95962c3775f430d1c0d8834e87be9&type=album",
-                "https://sun9-38.userapi.com/impg/RdLQC2h0czNrplosdUxVsMt7wYJFDpdN2vcDGg/JqNq2VTCdfo.jpg?size=1620x2160&quality=95&sign=0ed762707e802245c332c77fcaf117ce&type=album",
-                "https://sun9-32.userapi.com/impg/NplEbSLzs1bIPaLmJTvRoLUatBySuYlugINzZA/K_eilLgWPMQ.jpg?size=1620x2160&quality=95&sign=431a2418e7ded8d0ca879209abab17cf&type=album",
-                "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
-            };
-
-            var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
-
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
-                media: mediaGroup
-            );
-
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
-
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
-                }
-            });
-
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
-                text: "Фото комнат",
-                replyMarkup: keyboard
-            );
-        }
-
         static async Task HandleAction(string action, CallbackQuery callbackQuery, TelegramBotClient client, string chatId, Dictionary<long, List<int>> photoMessages)
         {
             switch (action)
@@ -184,7 +202,7 @@ namespace Namespace
                 case "description":
                     var descriptionMessage = await client.SendPhotoAsync(
                         chatId: chatId,
-                        photo: InputFile.FromUri("https://sun9-66.userapi.com/impg/E6gWP5zmvj4YIk3V22h7wEW4dNYgzbF2GKiOVA/OK_g5M6mB9E.jpg?size=1620x2160&quality=95&sign=8fd820e21070f17f693c3548418f465e&type=album"));
+                        photo: InputFile.FromUri("https://sun9-34.userapi.com/impg/tVuHuLHumvbmDQf6vCrji1-Xbz7Y8681dAwr2Q/IaqH5Kldkko.jpg?size=1620x2160&quality=95&sign=0f3d2ae876fac12cb208b4c764fd9659&type=album"));
                     AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, new[] { descriptionMessage.MessageId });
                     await SendDescriptionMenu(callbackQuery, client);
                     break;
@@ -223,14 +241,23 @@ namespace Namespace
 
                 case "telephone":
                     await SendTelephone(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "telephone", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "telephone", callbackQuery.From.Username);
                     break;
 
                 case "schedule":
                     await SendSchedule(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "schedule", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "schedule", callbackQuery.From.Username);
                     break;
 
                 case "telegram":
                     await SendTelegram(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "telegram", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "telegram", callbackQuery.From.Username);
                     break;
 
                 case "location":
@@ -239,6 +266,9 @@ namespace Namespace
 
                 case "rent":
                     await SendSchedule(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "rent", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "rent", callbackQuery.From.Username);
                     break;
 
                 case "other_options":
@@ -263,6 +293,9 @@ namespace Namespace
 
                 case "house2_schedule":
                     await SendHouse2Schedule(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_schedule", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_schedule", callbackQuery.From.Username);
                     break;
 
                 case "house2_photos_and_videos":
@@ -290,7 +323,7 @@ namespace Namespace
                     break;
 
                 case "house2_only_videos":
-                    await SendHouse2OnlyVideos(callbackQuery, client);
+                    await SendOnly2Videos(callbackQuery, client);
                     break;
 
                 case "house2_rooms_photos":
@@ -307,14 +340,23 @@ namespace Namespace
 
                 case "house2_telephone":
                     await SendHouse2Telephone(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_telephone", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_telephone", callbackQuery.From.Username);
                     break;
 
                 case "house2_telegram":
                     await SendHouse2Telegram(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_telegram", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_telegram", callbackQuery.From.Username);
                     break;
 
                 case "house2_rent":
                     await SendHouse2Rent(callbackQuery, client);
+                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_rent", callbackQuery.From.Username);
+                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_rent", callbackQuery.From.Username);
                     break;
 
                 case "apartment":
@@ -368,7 +410,74 @@ namespace Namespace
                 case "apartment_rent":
                     await SendApartmentRent(callbackQuery, client);
                     break;
+
+                case "help":
+                    await SendHelp(callbackQuery, client);
+                    break;
+
+                case "house2_help":
+                    await SendHelp(callbackQuery, client);
+                    break;
             }
+        }
+
+        static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
+        {
+            string[] photoUrls = new[]
+            {
+                "https://sun9-15.userapi.com/impg/nHCVFAyz7Ohm2ZEVZwk9Y-i6uFfBap6lPs-MVg/e3wC_1-vqU0.jpg?size=1620x2160&quality=95&sign=b246aafd8d6055523cadf6e846a3fe16&type=album",
+                "https://sun9-79.userapi.com/impg/LCtiarO_XUr-fipY-k0FfTCLwKYpN0wLiiEcKg/TQyEeHxbdx4.jpg?size=1620x2160&quality=95&sign=1556ac5c559832ff3783c28830c9c4f7&type=album",
+                "https://sun9-41.userapi.com/impg/R0rrOxY2LDWWABpbbFNpvHzlabxxoz7djD_aPw/xpXIHz5gJyY.jpg?size=1620x2160&quality=95&sign=92949eb9207d3c165ecc7a07784b9f1b&type=album",
+                "https://sun9-63.userapi.com/impg/QOpsLnT9HRw_Wmd7QOsxCO_4y6bYmO3Q6DoK9g/8mTwkpkmNg0.jpg?size=1620x2160&quality=95&sign=30b591c02e35a8c7e4d33ddaa9d82be1&type=album",
+                "https://sun9-49.userapi.com/impg/iRYbfsM6qzCitPRQkXrqPtU46JTnfDCcK0X_bA/8QmhM3yZFUo.jpg?size=1620x2160&quality=95&sign=e50eec5edd80a84504679e1f3623fd30&type=album",
+                "https://sun9-23.userapi.com/impg/nI1SnLt0b_7uJNCZwG0fmBISGDET8QmqF4fyRw/DHe-2a7MlCo.jpg?size=1620x2160&quality=95&sign=dc2a58f1330f6cd9b524f04b7b06dac5&type=album",
+                "https://sun9-41.userapi.com/impg/M_VE7yNNxGpccCRNLtbL3z5pEHbHf0JJJjfuIg/l1-eJyniIts.jpg?size=1620x2160&quality=95&sign=18d7c959342f8c966200b1a96bf0cdb8&type=album",
+                "https://sun9-79.userapi.com/impg/r_6-3JTEa3vX-ABNB_BgpU8q1xsdVBf_BnMW7A/cMoHXC8Y85E.jpg?size=1620x2160&quality=95&sign=3ac95a13d255d1752d8d20fe79a58502&type=album",
+                "https://sun9-22.userapi.com/impg/ukIC60d2hZd7mwUVCoYiXmZBDFd9KbeWnRUG2Q/-SQqHNDc77w.jpg?size=1620x2160&quality=95&sign=9ad48b5aec5df4e1cf255ad3ae9064b9&type=album",
+                "https://sun9-7.userapi.com/impg/IokIxOfDo-B1zKuBOw-GIVGGXKZwoELImsR1-g/1AI5JcxjvvM.jpg?size=1620x2160&quality=95&sign=3ee566417dbcb1e6a68cce44cc2191d2&type=album",
+            };
+
+            string[] photoUrls2 = new[]
+            {
+                "https://sun9-2.userapi.com/impg/LcD9LsbxAghEzANz6p2FmWS_WhTlb0-rcNYg_Q/lsiripL6yDY.jpg?size=1620x2160&quality=95&sign=faf4235dd8309ee2c1f2bb02e0ed592c&type=album",
+                "https://sun9-45.userapi.com/impg/hsfTNKutT-VVYadIFWt5yZzTZRCIMAD_BKEzFw/fTN_ydi5xHk.jpg?size=1620x2160&quality=95&sign=bcb64578404bbea62a1288057563c22f&type=album",
+                "https://sun9-2.userapi.com/impg/mpz7CyE4R2lwzpnk0v-XORAXCGIZMBZEv8ax7Q/URkk_2fp3uA.jpg?size=1620x2160&quality=95&sign=5533ddf69c8c6d2cbc43399e1294e151&type=album",
+                "https://sun9-40.userapi.com/impg/i_S05CiJnoN5u3SC45sE1VJWvpz8AbiS28bM2g/WteSwJs6mzs.jpg?size=1620x2160&quality=95&sign=11cbafc143b8b11a370a5e9fb5eac1fa&type=album",
+                "https://sun9-65.userapi.com/impg/6Kkj7OBWwyXByy-wH9ubk_Rr0aAqFPVwKVnBkg/_OSytMpJ974.jpg?size=1620x2160&quality=95&sign=d498d7b09bf269d5d5ca0622ee82bea3&type=album",
+                "https://sun9-70.userapi.com/impg/eLZ69_3Q1FsvpUpI2LXuysDQx3fvu5wmKHHo2Q/teoKSvyDKH4.jpg?size=1620x2160&quality=95&sign=a43649f5c7700eca740a45991b395696&type=album",
+                "https://sun9-76.userapi.com/impg/1-wQ1by8UUmgQ56bETTMfoY9-lWQdKR5RtLqxw/SWLNi75i1I8.jpg?size=1620x2160&quality=95&sign=dd5253bef4a000e001f196ab95d6b315&type=album",
+            };
+
+            var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
+
+            var sentMessages = await client.SendMediaGroupAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                media: mediaGroup
+            );
+
+            var mediaGroup2 = photoUrls2.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
+
+            var sentMessages2 = await client.SendMediaGroupAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                media: mediaGroup2
+            );
+
+            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages2.Select(msg => msg.MessageId).ToArray());
+
+            var keyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
+                }
+            });
+
+            await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "Фото комнат",
+                replyMarkup: keyboard
+            );
         }
 
         static async Task SendFeatures(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
@@ -391,13 +500,13 @@ namespace Namespace
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
             await client.SendTextMessageAsync(
                 chatId: callbackQuery.Message.Chat.Id,
-                text: "Фото развлечений",
+                text: "Фото удобств",
                 replyMarkup: keyboard
             );
         }
@@ -406,8 +515,11 @@ namespace Namespace
         {
             string[] photoUrls = new[]
             {
-                "https://sun9-17.userapi.com/impg/a-romZ_kDpZyHnu7paswHYw7niXnIPpJn3NYkw/9zG7vOxg-Wc.jpg?size=1620x2160&quality=95&sign=b24b780bd2e939f2f12507f076a8f4ef&type=album",
-                "https://sun9-66.userapi.com/impg/E6gWP5zmvj4YIk3V22h7wEW4dNYgzbF2GKiOVA/OK_g5M6mB9E.jpg?size=1620x2160&quality=95&sign=8fd820e21070f17f693c3548418f465e&type=album",
+                "https://sun9-64.userapi.com/impg/tSj9xCkXN1eyIlXxAphUBjU0klT28KiXj6Qnog/YSh2l7-P1fY.jpg?size=2560x1920&quality=95&sign=dbf49b425e134762f110ce3e748a32f3&type=album",
+                "https://sun9-55.userapi.com/impg/KEJ7vHUTOyLU4Gh01hgpH7fbAm6Mm0zo9r5AHQ/tk4_Xzc5PdQ.jpg?size=2560x1920&quality=95&sign=1998bb05e748cd61e068f0b576ef78b6&type=album",
+                "https://sun9-42.userapi.com/impg/NVv0c26XsDiuzhpK-tZbTn8OYEaXiGyRhmKnFA/xLT1qRE3jW0.jpg?size=1620x2160&quality=95&sign=e2239267a1759488b84bf1f5f4a3c785&type=album",
+                "https://sun9-33.userapi.com/impg/wgA9a4Ux0AbHu1bKSeP3fv4oZkroHDlfqWBY8w/XY5Jv_UtGSM.jpg?size=1620x2160&quality=95&sign=1ec48f5e34ae8fdedf5b6de9a4d758c2&type=album",
+                "https://sun9-75.userapi.com/impg/fo3JaZ0RIp0jsseLgHW-rmtDmE1KDjGQrw_W2g/R-gDhyaF1cw.jpg?size=1620x2160&quality=95&sign=06eac938c231faffa7ce604dc8076d10&type=album",
             };
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
@@ -423,7 +535,7 @@ namespace Namespace
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -434,21 +546,82 @@ namespace Namespace
             );
         }
 
+        public static async Task SendOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
+        {
+            var keyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
+                }
+            });
+
+            var message1 = await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "https://t.me/GubakhaVideo/4"
+            );
+
+            var message2 = await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "https://t.me/GubakhaVideo/3",
+                replyMarkup: keyboard
+            );
+
+            if (!videoMessageIds.ContainsKey(callbackQuery.Message.Chat.Id))
+            {
+                videoMessageIds[callbackQuery.Message.Chat.Id] = new List<int>();
+            }
+
+            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message1.MessageId);
+            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message2.MessageId);
+        }
+
+        public static async Task SendOnly2Videos(CallbackQuery callbackQuery, TelegramBotClient client)
+        {
+            var keyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
+                }
+            });
+
+            var message1 = await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "https://t.me/GubakhaVideo/5"
+            );
+
+            var message2 = await client.SendTextMessageAsync(
+                chatId: callbackQuery.Message.Chat.Id,
+                text: "https://t.me/GubakhaVideo/6",
+                replyMarkup: keyboard
+            );
+
+            if (!videoMessageIds.ContainsKey(callbackQuery.Message.Chat.Id))
+            {
+                videoMessageIds[callbackQuery.Message.Chat.Id] = new List<int>();
+            }
+
+            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message1.MessageId);
+            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message2.MessageId);
+        }
+
         static async Task SendHouse2Rooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
         {
             string[] photoUrls = new[]
             {
-                "https://sun9-61.userapi.com/impg/RbTV_Obt0mAN7HdV2j3NTtdChI5KSb7jSU-jVw/PE72BddtILg.jpg?size=1620x2160&quality=95&sign=cb412488ddabd158a57eef0d2c2aa152&type=album",
-                "https://sun9-27.userapi.com/impg/QFtX7vMSVp7JItyoEu5IufZ_RlB_TEmk1Bsp4w/QyVbBV5th2o.jpg?size=1620x2160&quality=95&sign=8415bb53dd8408995fcba6927f1895d1&type=album",
-                "https://sun9-68.userapi.com/impg/oxSw_K8T1MHtfm1Pllkb_J7X7ortypYUsO_WVw/gQrzD1BVVfA.jpg?size=1620x2160&quality=95&sign=87dc2d81acbf105b9ca73df074a419b7&type=album",
-                "https://sun9-36.userapi.com/impg/0dna961s9I15WvVukB7to7AZVzeD57twiVXFfw/4utHRLRogWc.jpg?size=1620x2160&quality=95&sign=bbf5f87f356449a74dca19c591d8945b&type=album",
-                "https://sun9-27.userapi.com/impg/5F5ykUjos5SXRIhZ_vIMAR18RnVCNAS-ACzFMA/l0ZFWEP6Q5I.jpg?size=1620x2160&quality=95&sign=8431af46df3d6f74fa9befcee0ec1244&type=album",
-                "https://sun9-36.userapi.com/impg/YFLOwvasKU8g3GI6DXYHtwyFac6r2S1OD_v0hQ/c7yqpnyA6yM.jpg?size=1620x2160&quality=95&sign=088ac6af2df800c9f7fdee9fe8d2ba21&type=album",
-                "https://sun9-30.userapi.com/impg/4J66aMCbo0_FyN0GBHAoWjG_yDuHFm9mNNDhzA/u3BbggLKtyk.jpg?size=1620x2160&quality=95&sign=8c4ae8fe5df8ff7ad9747a90133b9602&type=album",
-                "https://sun9-15.userapi.com/impg/GW51mmZpFE3DQJx_7qUw4x2shx1lzpMFVuYpGw/Dr53X4oDPxg.jpg?size=1620x2160&quality=95&sign=e4a47aae94003aef28d66c1a64a80c16&type=album",
-                "https://sun9-39.userapi.com/impg/J_nfloHymUaUnphpNoJOVNr_LPX3iTs0Jh66dQ/wjrKOr6Gu4Q.jpg?size=2560x1920&quality=95&sign=c31cc5ba8cc0e3f95f6d3c773337fa12&type=album",
-                "https://sun9-1.userapi.com/impg/pVkZH7XsDx90SmKxRWle-9OM1K0g6WlsVbvJMw/yjp_RyrLJWY.jpg?size=1620x2160&quality=95&sign=df0b7450269f18949f4f70f5c118ed29&type=album",
+                "https://sun9-24.userapi.com/impg/xeRwc_Gn-7nSwcXno6W8DCoUZVaA4q1VDNhaug/RYEmWz9qKiU.jpg?size=2560x1920&quality=95&sign=6b9640ebf5f85e038f14d8fe39d6f84a&type=album",
+                "https://sun9-63.userapi.com/impg/Y5iUH_UvvZbWSMzRJGmJyDLSvowQNbCEQ6Zf8g/4mBSEDNwiyw.jpg?size=2560x1920&quality=95&sign=adbd78a9221509a5eb3ca9b8bb9afd29&type=album",
+                "https://sun9-52.userapi.com/impg/g6o8NTRc_Smf_SkKMwjW39eH-UZwh9vdr7thKg/VggiN64sbm0.jpg?size=1620x2160&quality=95&sign=1d05cd71a503b2cc06f6f4d8cd850d65&type=album",
+                "https://sun9-79.userapi.com/impg/GA0jKLz0trBwpBayGbrimP7oSDCXJS5MQuHeKQ/-tWr1oNzgRw.jpg?size=2560x1920&quality=95&sign=fbad44ec9c3cf701d0b26d5b4ccf3995&type=album",
+                "https://sun9-18.userapi.com/impg/PdWUay4kYo5_SIHoYAQpAfJXpsP7pkNURedDxQ/TSFvyJ5WPl4.jpg?size=1620x2160&quality=95&sign=01114d102eaa5d4273d249a0cbabf034&type=album",
+                "https://sun9-3.userapi.com/impg/v4cgt8Ewts5_MWW2HdRahr8bt5M1g-kxBLuzkA/8_QM-mlVCnY.jpg?size=1620x2160&quality=95&sign=362e42532ef96d60e5416206cb0c3ca1&type=album",
+                "https://sun9-68.userapi.com/impg/bN5Qfb_XQaec0x3R9aFw5HkaHoV6bnIH3Fy9kw/pgZSyidojBU.jpg?size=1620x2160&quality=95&sign=c6cbbed69644a2285e9987769b5bbaa7&type=album",
+                "https://sun9-80.userapi.com/impg/WnwfT-SISRkKJtuC_TUaSVT_SnJfI_qU3S8DFw/qRH8w7BPKnw.jpg?size=1620x2160&quality=95&sign=d967ed17d6e74c1a2d622f5921f4d32f&type=album",
+                "https://sun9-23.userapi.com/impg/Qh9fgrCWPHTNJTQ3RoY6irAGRg6XPiLExFUVXw/INHl3saKL08.jpg?size=1620x2160&quality=95&sign=f9cdace87e3f406438d9d608c5e52dca&type=album",
+                "https://sun9-78.userapi.com/impg/Gcf5jRZgPRebx5shArsNrcYQoT-f9ldWnPZjXQ/p5BraJqro2U.jpg?size=2560x1920&quality=95&sign=7f56d2c70b9ba193ecfbe01e3422a58d&type=album",
             };
+
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
@@ -463,7 +636,7 @@ namespace Namespace
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -494,13 +667,13 @@ namespace Namespace
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
             await client.SendTextMessageAsync(
                 chatId: callbackQuery.Message.Chat.Id,
-                text: "Фото развлечений",
+                text: "Фото удобств",
                 replyMarkup: keyboard
             );
         }
@@ -512,6 +685,7 @@ namespace Namespace
                 "https://sun9-12.userapi.com/impg/ZnooW0u89W13lBWv2Bm2ACLHHShsHlBrl-NwVw/SQUrSmDZcXI.jpg?size=1620x2160&quality=95&sign=d780f64724b30e10151110f377a7efd9&type=album",
                 "https://sun9-57.userapi.com/impg/4USiQbZMyAi7y3PY0IgrMsIVAh92O9AE2I0sNA/6Hq-jZmj0nU.jpg?size=1620x2160&quality=95&sign=9c17c508574b4be7d232af1cfafdce04&type=album",
                 "https://sun9-80.userapi.com/impg/0A_Eg80F5VmHZjDlt1GowDDvLWC_XDbQKz8oOw/UnPY7u1BdpE.jpg?size=1620x2160&quality=95&sign=ff938b2ff919688b629da161529f1ad1&type=album",
+                "https://sun9-32.userapi.com/impg/ybmkuexo8YehtJIzVr_7eWm4YNt8wLSWxklBww/70DBqOjCoU8.jpg?size=1820x998&quality=96&sign=c9cf77b0c3fa5cca3194fbf45de75292&type=album"
             };
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
@@ -527,7 +701,7 @@ namespace Namespace
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Назад", "go_back")
+                    InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
 
@@ -536,6 +710,59 @@ namespace Namespace
                 text: "Фото с улицы",
                 replyMarkup: keyboard
             );
+        }
+
+        static void IncrementButtonClick(long chatId, string action, string username)
+        {
+            if (!rentButtonClicks.ContainsKey(chatId))
+            {
+                rentButtonClicks[chatId] = 0;
+            }
+            rentButtonClicks[chatId]++;
+            uniqueUsers.Add("@" + username);
+        }
+
+        static async Task UploadStatistics(long chatId, string action, string username)
+        {
+            var spreadsheetId = "1q7CAgj_Gp_wEcFHA_1Fde5jo-IXIZeKPgkjXicdfADU";
+            var range = "Лист1!A:D";
+
+            var requestBody = new ValueRange
+            {
+                Values = new List<IList<object>>
+                {
+                    new List<object> { DateTime.Now.ToString("s"), "@" + username, action }
+                }
+            };
+
+            var appendRequest = sheetsService.Spreadsheets.Values.Append(requestBody, spreadsheetId, range);
+            appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+
+            var appendResponse = await appendRequest.ExecuteAsync();
+            Console.WriteLine($"Statistics uploaded successfully for username @{username} and action {action}.");
+
+            await UpdateUserCount();
+        }
+
+        static async Task UpdateUserCount()
+        {
+            var spreadsheetId = "1q7CAgj_Gp_wEcFHA_1Fde5jo-IXIZeKPgkjXicdfADU";
+            var userCountRange = "Лист1!E1:E2";
+
+            var userCountBody = new ValueRange
+            {
+                Values = new List<IList<object>>
+                {
+                    new List<object> { "Кол-во пользователей" },
+                    new List<object> { uniqueUsers.Count }
+                }
+            };
+
+            var updateRequest = sheetsService.Spreadsheets.Values.Update(userCountBody, spreadsheetId, userCountRange);
+            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+
+            await updateRequest.ExecuteAsync();
+            Console.WriteLine("User count updated in F1 and F2.");
         }
     }
 }
