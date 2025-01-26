@@ -113,6 +113,7 @@ namespace Namespace
             );
             await DeleteMessageSafeAsync(client, chatId, message.MessageId);
         }
+        
 
         static void InitializeGoogleSheets()
         {
@@ -120,18 +121,29 @@ namespace Namespace
             string ApplicationName = "Telegram Bot Google Sheets Integration";
 
             UserCredential credential;
-            using (var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+
+            // Читаем содержимое JSON из строки или переменной окружения
+            string credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS");
+
+            if (string.IsNullOrEmpty(credentialsJson))
             {
-                string credPath = "token.json";
+                throw new Exception("Google credentials are missing. Make sure GOOGLE_CREDENTIALS is set.");
+            }
+
+            using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(credentialsJson)))
+            {
+                string credPath = "token.json"; // Путь для хранения токена авторизации
                 credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
                     Scopes,
                     "user",
                     CancellationToken.None,
                     new FileDataStore(credPath, true)).Result;
+
                 Console.WriteLine("Credential file saved to: " + credPath);
             }
 
+            // Инициализируем SheetsService
             sheetsService = new SheetsService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
@@ -140,6 +152,7 @@ namespace Namespace
 
             InitializeSheetHeaders();
         }
+
 
         static async Task InitializeSheetHeaders()
         {
