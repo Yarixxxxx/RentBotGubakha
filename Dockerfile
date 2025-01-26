@@ -21,10 +21,12 @@ RUN dotnet build "./BotGubakha.csproj" -c %BUILD_CONFIGURATION% -o /app/build
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
+COPY credentials.json /app/credentials.json
 RUN dotnet publish "./BotGubakha.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
 
 # Этот этап используется в рабочей среде или при запуске из VS в обычном режиме (по умолчанию, когда конфигурация отладки не используется)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY credentials.json /app/credentials.json
 ENTRYPOINT ["dotnet", "BotGubakha.dll"]
