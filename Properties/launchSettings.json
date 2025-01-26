@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BotGubakha": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
