@@ -1,0 +1,10 @@
+stages:
+  - deploy
+
+deploy_job:
+  stage: deploy
+  script:
+    - echo "Deploying to the server..."
+    - ssh user@your-server-address "cd /path/to/project && git pull && dotnet publish -c Release"
+  only:
+    - main
