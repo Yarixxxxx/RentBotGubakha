@@ -1,104 +1,108 @@
-﻿using Google.Apis.Sheets.v4.Data;
-using Google.Apis.Sheets.v4;
+using System.Globalization;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
-using System.Data;
+using RentGubakhaBot.Services;
+using static RentGubakhaBot.BotMenus;
 
-namespace Namespace
+namespace RentGubakhaBot
 {
-    class MainClass : Buttons
+    internal sealed class BotUpdateHandler
     {
-        static Dictionary<long, int> rentButtonClicks = new Dictionary<long, int>();
-        static HashSet<string> uniqueUsers = new HashSet<string>();
-        static SheetsService sheetsService;
+        private readonly TelegramBotClient _client;
+        private readonly IStatisticsService _statistics;
+        private readonly Dictionary<long, Stack<string>> _userActions = new();
+        private readonly Dictionary<long, List<int>> _photoMessageIds = new();
+        private readonly Dictionary<long, List<int>> _videoMessageIds = new();
 
-        static Dictionary<long, List<int>> videoMessageIds = new Dictionary<long, List<int>>();
-
-        static async Task Main(string[] args)
+        public BotUpdateHandler(TelegramBotClient client, IStatisticsService statistics)
         {
-            InitializeGoogleSheets();
-            var botToken = "***REMOVED***";
-            var client = new TelegramBotClient(botToken);
-            var offset = 0;
-            bool isOK = true;
-
-            Console.WriteLine("Bot started...");
-
-            Dictionary<long, Stack<string>> userActions = new Dictionary<long, Stack<string>>();
-            Dictionary<long, List<int>> photoMessages = new Dictionary<long, List<int>>();
-            while (isOK)
-            {
-                var updates = await client.GetUpdatesAsync(offset);
-                foreach (var update in updates)
-                {
-                    Console.WriteLine("Processing update...");
-
-                    var message = update.Message;
-                    var callbackQuery = update.CallbackQuery;
-
-                    if (callbackQuery != null)
-                    {
-                        var chatId = callbackQuery.Message.Chat.Id;
-                        var username = "@" + callbackQuery.From.Username;
-
-                        if (photoMessages.ContainsKey(chatId) && photoMessages[chatId].Count > 0)
-                        {
-                            await DeleteAllPhotoMessages(client, chatId, photoMessages);
-                        }
-
-                        if (!userActions.ContainsKey(chatId) && message == null)
-                            userActions[chatId] = new Stack<string>();
-
-                        if (callbackQuery.Data == "go_back" && userActions[chatId].Count > 0)
-                        {
-                            userActions[chatId].Pop();
-                            if (userActions[chatId].Count > 0)
-                            {
-                                string previousAction = userActions[chatId].Peek();
-                                await HandleAction(previousAction, callbackQuery, client, chatId.ToString(), photoMessages);
-                            }
-                            else
-                            {
-                                await SendMainMenu(callbackQuery.Message, client);
-                            }
-
-                            if (videoMessageIds.ContainsKey(chatId))
-                            {
-                                foreach (var msgId in videoMessageIds[chatId])
-                                {
-                                    await DeleteMessageSafeAsync(client, chatId, msgId);
-                                }
-                                videoMessageIds[chatId].Clear();
-                            }
-                        }
-                        else
-                        {
-                            await HandleAction(callbackQuery.Data, callbackQuery, client, chatId.ToString(), photoMessages);
-                            userActions[chatId].Push(callbackQuery.Data);
-                        }
-                        await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    }
-
-                    if (message != null && message.Text == "/start")
-                    {
-                        await SendWelcomeMessage(message, client);
-                    }
-                    offset = update.Id + 1;
-                }
-                await Task.Delay(700);
-            }
+            _client = client;
+            _statistics = statistics;
         }
 
-        static async Task SendWelcomeMessage(Message message, TelegramBotClient client)
+        public async Task HandleAsync(Update update, CancellationToken cancellationToken)
+        {
+            if (update.Message is { Text: { } text } message && IsStartCommand(text))
+            {
+                _userActions.Remove(message.Chat.Id);
+                await DeleteTrackedMediaAsync(message.Chat.Id);
+                await SendWelcomeMessageAsync(message, deleteSourceMessage: true);
+                return;
+            }
+
+            if (update.CallbackQuery is { } callbackQuery)
+                await HandleCallbackQueryAsync(callbackQuery, cancellationToken);
+        }
+
+        private static bool IsStartCommand(string text)
+        {
+            var command = text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0];
+            var mentionIndex = command.IndexOf('@');
+            if (mentionIndex >= 0)
+                command = command[..mentionIndex];
+
+            return command.Equals("/start", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task HandleCallbackQueryAsync(CallbackQuery callbackQuery, CancellationToken cancellationToken)
+        {
+            await _client.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+
+            if (callbackQuery.Message is not { } sourceMessage ||
+                string.IsNullOrWhiteSpace(callbackQuery.Data))
+            {
+                return;
+            }
+
+            var chatId = sourceMessage.Chat.Id;
+            await DeleteTrackedMediaAsync(chatId);
+
+            if (!_userActions.TryGetValue(chatId, out var history))
+            {
+                history = new Stack<string>();
+                _userActions[chatId] = history;
+            }
+
+            if (callbackQuery.Data == "go_back")
+            {
+                if (history.Count > 0)
+                    history.Pop();
+
+                if (history.TryPeek(out var previousAction))
+                {
+                    await HandleAction(previousAction, callbackQuery, _client, chatId.ToString(CultureInfo.InvariantCulture), _photoMessageIds, false, cancellationToken);
+                }
+                else
+                {
+                    await SendWelcomeMessageAsync(sourceMessage, deleteSourceMessage: false);
+                }
+            }
+            else
+            {
+                var handled = await HandleAction(
+                    callbackQuery.Data,
+                    callbackQuery,
+                    _client,
+                    chatId.ToString(CultureInfo.InvariantCulture),
+                    _photoMessageIds,
+                    true,
+                    cancellationToken);
+
+                if (handled && (history.Count == 0 || history.Peek() != callbackQuery.Data))
+                    history.Push(callbackQuery.Data);
+            }
+
+            await DeleteMessageSafeAsync(_client, chatId, sourceMessage.Id);
+        }
+
+        private async Task SendWelcomeMessageAsync(Message message, bool deleteSourceMessage)
         {
             var chatId = message.Chat.Id;
             var welcomeText = "⛷️🏠🏂 Добро пожаловать в Губаху! ⛷️🏠🏂 \n\nДля начала выберите дом, расположенный рядом с вами:\n\n1 дом - желтый (Краснооктябрьская, 6)\n2 дом - коричневый (Краснооктябрьская, 12)\n\nНажмите на кнопку для выбора дома";
             var mapImageUrl = "https://sun9-70.userapi.com/impg/doJM9P55crDMijXqswRzmVBZMAwp22-5570ajQ/sDEl6SxsXSE.jpg?size=2094x1657&quality=96&sign=397a5a1593b85a7a4612b8ae8641a832&type=album";
-            await client.SendPhotoAsync(
+            await _client.SendPhoto(
                 chatId: chatId,
                 photo: InputFile.FromUri(mapImageUrl),
                 caption: welcomeText,
@@ -111,112 +115,66 @@ namespace Namespace
                     }
                 })
             );
-            await DeleteMessageSafeAsync(client, chatId, message.MessageId);
+            if (deleteSourceMessage)
+                await DeleteMessageSafeAsync(_client, chatId, message.Id);
         }
-        
 
-        static void InitializeGoogleSheets()
+
+        private static void AddToPhotoMessages(
+            Dictionary<long, List<int>> photoMessages,
+            long chatId,
+            IEnumerable<int> messageIds)
         {
-            string[] Scopes = { SheetsService.Scope.Spreadsheets };
-            string ApplicationName = "Telegram Bot Google Sheets Integration";
+            if (!photoMessages.TryGetValue(chatId, out var messages))
+                photoMessages[chatId] = messages = new List<int>();
 
-            UserCredential credential;
+            messages.AddRange(messageIds);
+        }
 
-            // Читаем содержимое JSON из строки или переменной окружения
-            string credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS");
-
-            if (string.IsNullOrEmpty(credentialsJson))
+        private async Task DeleteTrackedMediaAsync(long chatId)
+        {
+            if (_photoMessageIds.Remove(chatId, out var photoIds))
             {
-                throw new Exception("Google credentials are missing. Make sure GOOGLE_CREDENTIALS is set.");
+                foreach (var messageId in photoIds)
+                    await DeleteMessageSafeAsync(_client, chatId, messageId);
             }
 
-            using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(credentialsJson)))
+            if (_videoMessageIds.Remove(chatId, out var videoIds))
             {
-                string credPath = "token.json"; // Путь для хранения токена авторизации
-                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
-                    Scopes,
-                    "user",
-                    CancellationToken.None,
-                    new FileDataStore(credPath, true)).Result;
-
-                Console.WriteLine("Credential file saved to: " + credPath);
-            }
-
-            // Инициализируем SheetsService
-            sheetsService = new SheetsService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = ApplicationName,
-            });
-
-            InitializeSheetHeaders();
-        }
-
-
-        static async Task InitializeSheetHeaders()
-        {
-            var spreadsheetId = "1q7CAgj_Gp_wEcFHA_1Fde5jo-IXIZeKPgkjXicdfADU";
-            var range = "Лист1!A1:С1";
-            var headerValues = new List<IList<object>> {
-        new List<object> { "Время", "Идентификатор", "Действие"}
-    };
-
-            var valueRange = new ValueRange { Values = headerValues };
-
-            var updateRequest = sheetsService.Spreadsheets.Values.Update(valueRange, spreadsheetId, range);
-            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-
-            await updateRequest.ExecuteAsync();
-            Console.WriteLine("Sheet headers initialized.");
-        }
-
-        static void AddToPhotoMessages(Dictionary<long, List<int>> photoMessages, long chatId, int[] messageIds)
-        {
-            if (!photoMessages.ContainsKey(chatId))
-            {
-                photoMessages[chatId] = new List<int>();
-            }
-            photoMessages[chatId].AddRange(messageIds);
-        }
-
-        static async Task DeleteAllPhotoMessages(TelegramBotClient client, long chatId, Dictionary<long, List<int>> photoMessages)
-        {
-            if (photoMessages.ContainsKey(chatId))
-            {
-                foreach (var messageId in photoMessages[chatId])
-                {
-                    await DeleteMessageSafeAsync(client, chatId, messageId);
-                }
-                photoMessages[chatId].Clear();
+                foreach (var messageId in videoIds)
+                    await DeleteMessageSafeAsync(_client, chatId, messageId);
             }
         }
 
-        static async Task DeleteMessageSafeAsync(TelegramBotClient client, long chatId, int messageId)
+        private static async Task DeleteMessageSafeAsync(TelegramBotClient client, long chatId, int messageId)
         {
             try
             {
-                await client.DeleteMessageAsync(chatId, messageId);
+                await client.DeleteMessage(chatId, messageId);
             }
-            catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message to delete not found"))
+            catch (ApiRequestException ex) when (ex.ErrorCode == 400)
             {
-                Console.WriteLine($"Message {messageId} not found: {ex.Message}");
-            }
-            catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message can't be deleted for everyone"))
-            {
-                Console.WriteLine($"Message {messageId} can't be deleted for everyone: {ex.Message}");
+                Console.Error.WriteLine($"Не удалось удалить сообщение {messageId} в чате {chatId}: {ex.Message}");
             }
         }
 
-        static async Task HandleAction(string action, CallbackQuery callbackQuery, TelegramBotClient client, string chatId, Dictionary<long, List<int>> photoMessages)
+        private async Task<bool> HandleAction(
+            string action,
+            CallbackQuery callbackQuery,
+            TelegramBotClient client,
+            string chatId,
+            Dictionary<long, List<int>> photoMessages,
+            bool trackStatistics,
+            CancellationToken cancellationToken)
         {
             switch (action)
             {
                 case "description":
-                    var descriptionMessage = await client.SendPhotoAsync(
+                    var descriptionMessage = await client.SendPhoto(
                         chatId: chatId,
-                        photo: InputFile.FromUri("https://sun9-34.userapi.com/impg/tVuHuLHumvbmDQf6vCrji1-Xbz7Y8681dAwr2Q/IaqH5Kldkko.jpg?size=1620x2160&quality=95&sign=0f3d2ae876fac12cb208b4c764fd9659&type=album"));
-                    AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, new[] { descriptionMessage.MessageId });
+                        photo: InputFile.FromUri("https://sun9-34.userapi.com/impg/tVuHuLHumvbmDQf6vCrji1-Xbz7Y8681dAwr2Q/IaqH5Kldkko.jpg?size=1620x2160&quality=95&sign=0f3d2ae876fac12cb208b4c764fd9659&type=album"),
+                        cancellationToken: cancellationToken);
+                    AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, new[] { descriptionMessage.Id });
                     await SendDescriptionMenu(callbackQuery, client);
                     break;
 
@@ -254,23 +212,20 @@ namespace Namespace
 
                 case "telephone":
                     await SendTelephone(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "telephone", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "telephone", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "telephone", cancellationToken);
                     break;
 
                 case "schedule":
                     await SendSchedule(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "schedule", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "schedule", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "schedule", cancellationToken);
                     break;
 
                 case "telegram":
                     await SendTelegram(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "telegram", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "telegram", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "telegram", cancellationToken);
                     break;
 
                 case "location":
@@ -279,9 +234,8 @@ namespace Namespace
 
                 case "rent":
                     await SendSchedule(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "rent", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "rent", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "rent", cancellationToken);
                     break;
 
                 case "other_options":
@@ -289,7 +243,7 @@ namespace Namespace
                     break;
 
                 case "house":
-                    await SendMainMenu(callbackQuery.Message, client);
+                    await SendMainMenu(callbackQuery.Message!, client);
                     break;
 
                 case "house2":
@@ -297,18 +251,18 @@ namespace Namespace
                     break;
 
                 case "house2_description":
-                    var descriptionMessage2 = await client.SendPhotoAsync(
+                    var descriptionMessage2 = await client.SendPhoto(
                        chatId: chatId,
-                       photo: InputFile.FromUri("https://sun9-57.userapi.com/impg/4USiQbZMyAi7y3PY0IgrMsIVAh92O9AE2I0sNA/6Hq-jZmj0nU.jpg?size=1620x2160&quality=95&sign=9c17c508574b4be7d232af1cfafdce04&type=album"));
-                    AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, new[] { descriptionMessage2.MessageId });
+                       photo: InputFile.FromUri("https://sun9-57.userapi.com/impg/4USiQbZMyAi7y3PY0IgrMsIVAh92O9AE2I0sNA/6Hq-jZmj0nU.jpg?size=1620x2160&quality=95&sign=9c17c508574b4be7d232af1cfafdce04&type=album"),
+                       cancellationToken: cancellationToken);
+                    AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, new[] { descriptionMessage2.Id });
                     await SendHouse2Description(callbackQuery, client);
                     break;
 
                 case "house2_schedule":
                     await SendHouse2Schedule(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_schedule", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_schedule", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "house2_schedule", cancellationToken);
                     break;
 
                 case "house2_photos_and_videos":
@@ -353,23 +307,20 @@ namespace Namespace
 
                 case "house2_telephone":
                     await SendHouse2Telephone(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_telephone", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_telephone", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "house2_telephone", cancellationToken);
                     break;
 
                 case "house2_telegram":
                     await SendHouse2Telegram(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_telegram", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_telegram", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "house2_telegram", cancellationToken);
                     break;
 
                 case "house2_rent":
                     await SendHouse2Rent(callbackQuery, client);
-                    IncrementButtonClick(callbackQuery.Message.Chat.Id, "house2_rent", callbackQuery.From.Username);
-                    await DeleteMessageSafeAsync(client, callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
-                    await UploadStatistics(callbackQuery.Message.Chat.Id, "house2_rent", callbackQuery.From.Username);
+                    if (trackStatistics)
+                        await TrackStatisticsAsync(callbackQuery.From, "house2_rent", cancellationToken);
                     break;
 
                 case "apartment":
@@ -431,7 +382,12 @@ namespace Namespace
                 case "house2_help":
                     await SendHelp(callbackQuery, client);
                     break;
+
+                default:
+                    return false;
             }
+
+            return true;
         }
 
         static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
@@ -463,20 +419,20 @@ namespace Namespace
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
             var mediaGroup2 = photoUrls2.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages2 = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages2 = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup2
             );
 
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages2.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages.Select(msg => msg.Id).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages2.Select(msg => msg.Id).ToArray());
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -486,8 +442,8 @@ namespace Namespace
                 }
             });
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Фото комнат",
                 replyMarkup: keyboard
             );
@@ -502,12 +458,12 @@ namespace Namespace
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages.Select(msg => msg.Id).ToArray());
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -517,8 +473,8 @@ namespace Namespace
                 }
             });
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Фото удобств",
                 replyMarkup: keyboard
             );
@@ -537,12 +493,12 @@ namespace Namespace
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages.Select(msg => msg.Id).ToArray());
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -552,14 +508,14 @@ namespace Namespace
                 }
             });
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Фото с улицы",
                 replyMarkup: keyboard
             );
         }
 
-        public static async Task SendOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
+        private async Task SendOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -569,27 +525,26 @@ namespace Namespace
                 }
             });
 
-            var message1 = await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var message1 = await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "https://t.me/GubakhaVideo/4"
             );
 
-            var message2 = await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var message2 = await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "https://t.me/GubakhaVideo/3",
                 replyMarkup: keyboard
             );
 
-            if (!videoMessageIds.ContainsKey(callbackQuery.Message.Chat.Id))
-            {
-                videoMessageIds[callbackQuery.Message.Chat.Id] = new List<int>();
-            }
+            var chatId = callbackQuery.Message!.Chat.Id;
+            if (!_videoMessageIds.TryGetValue(chatId, out var messageIds))
+                _videoMessageIds[chatId] = messageIds = new List<int>();
 
-            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message1.MessageId);
-            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message2.MessageId);
+            messageIds.Add(message1.Id);
+            messageIds.Add(message2.Id);
         }
 
-        public static async Task SendOnly2Videos(CallbackQuery callbackQuery, TelegramBotClient client)
+        private async Task SendOnly2Videos(CallbackQuery callbackQuery, TelegramBotClient client)
         {
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -599,24 +554,23 @@ namespace Namespace
                 }
             });
 
-            var message1 = await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var message1 = await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "https://t.me/GubakhaVideo/5"
             );
 
-            var message2 = await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var message2 = await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "https://t.me/GubakhaVideo/6",
                 replyMarkup: keyboard
             );
 
-            if (!videoMessageIds.ContainsKey(callbackQuery.Message.Chat.Id))
-            {
-                videoMessageIds[callbackQuery.Message.Chat.Id] = new List<int>();
-            }
+            var chatId = callbackQuery.Message!.Chat.Id;
+            if (!_videoMessageIds.TryGetValue(chatId, out var messageIds))
+                _videoMessageIds[chatId] = messageIds = new List<int>();
 
-            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message1.MessageId);
-            videoMessageIds[callbackQuery.Message.Chat.Id].Add(message2.MessageId);
+            messageIds.Add(message1.Id);
+            messageIds.Add(message2.Id);
         }
 
         static async Task SendHouse2Rooms(CallbackQuery callbackQuery, TelegramBotClient client, Dictionary<long, List<int>> photoMessages)
@@ -638,12 +592,12 @@ namespace Namespace
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages.Select(msg => msg.Id).ToArray());
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -653,8 +607,8 @@ namespace Namespace
                 }
             });
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Фото комнат",
                 replyMarkup: keyboard
             );
@@ -669,12 +623,12 @@ namespace Namespace
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages.Select(msg => msg.Id).ToArray());
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -684,8 +638,8 @@ namespace Namespace
                 }
             });
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Фото удобств",
                 replyMarkup: keyboard
             );
@@ -703,12 +657,12 @@ namespace Namespace
 
             var mediaGroup = photoUrls.Select(url => new InputMediaPhoto(InputFile.FromUri(url))).ToList<IAlbumInputMedia>();
 
-            var sentMessages = await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            var sentMessages = await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
-            AddToPhotoMessages(photoMessages, callbackQuery.Message.Chat.Id, sentMessages.Select(msg => msg.MessageId).ToArray());
+            AddToPhotoMessages(photoMessages, callbackQuery.Message!.Chat.Id, sentMessages.Select(msg => msg.Id).ToArray());
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -718,64 +672,28 @@ namespace Namespace
                 }
             });
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Фото с улицы",
                 replyMarkup: keyboard
             );
         }
 
-        static void IncrementButtonClick(long chatId, string action, string username)
+        private async Task TrackStatisticsAsync(User user, string action, CancellationToken cancellationToken)
         {
-            if (!rentButtonClicks.ContainsKey(chatId))
+            try
             {
-                rentButtonClicks[chatId] = 0;
+                await _statistics.TrackAsync(user.Id, user.Username, action, cancellationToken);
             }
-            rentButtonClicks[chatId]++;
-            uniqueUsers.Add("@" + username);
-        }
-
-        static async Task UploadStatistics(long chatId, string action, string username)
-        {
-            var spreadsheetId = "1q7CAgj_Gp_wEcFHA_1Fde5jo-IXIZeKPgkjXicdfADU";
-            var range = "Лист1!A:D";
-
-            var requestBody = new ValueRange
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                Values = new List<IList<object>>
-                {
-                    new List<object> { DateTime.Now.ToString("s"), "@" + username, action }
-                }
-            };
-
-            var appendRequest = sheetsService.Spreadsheets.Values.Append(requestBody, spreadsheetId, range);
-            appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-
-            var appendResponse = await appendRequest.ExecuteAsync();
-            Console.WriteLine($"Statistics uploaded successfully for username @{username} and action {action}.");
-
-            await UpdateUserCount();
-        }
-
-        static async Task UpdateUserCount()
-        {
-            var spreadsheetId = "1q7CAgj_Gp_wEcFHA_1Fde5jo-IXIZeKPgkjXicdfADU";
-            var userCountRange = "Лист1!E1:E2";
-
-            var userCountBody = new ValueRange
+                throw;
+            }
+            catch (Exception exception)
             {
-                Values = new List<IList<object>>
-                {
-                    new List<object> { "Кол-во пользователей" },
-                    new List<object> { uniqueUsers.Count }
-                }
-            };
-
-            var updateRequest = sheetsService.Spreadsheets.Values.Update(userCountBody, spreadsheetId, userCountRange);
-            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-
-            await updateRequest.ExecuteAsync();
-            Console.WriteLine("User count updated in F1 and F2.");
+                Console.Error.WriteLine($"Не удалось записать статистику '{action}': {exception.Message}");
+            }
         }
     }
 }
+

@@ -21,6 +21,11 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
+**/credentials*.json
+**/client_secret*.json
+**/token.json
+**/*.zip
+BotGubakha.Tests
 LICENSE
 README.md
 !**/.gitignore

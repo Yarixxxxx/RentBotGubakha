@@ -1,10 +1,10 @@
-﻿using Telegram.Bot;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Namespace
+namespace RentGubakhaBot
 {
-    class Buttons
+    internal static class BotMenus
     {
         public static async Task<Message> SendMainMenu(Message message, TelegramBotClient client)
         {
@@ -33,7 +33,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(message.Chat.Id, description, replyMarkup: keyboard);
+            return await client.SendMessage(message.Chat.Id, description, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendDescriptionMenu(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -75,7 +75,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, fullDescription, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, fullDescription, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendFAQ(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -90,7 +90,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text_with_link, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text_with_link, replyMarkup: keyboard);
         }
 
         public static async Task<Message> PhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -109,7 +109,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendOnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -128,7 +128,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task SendRooms(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -152,13 +152,13 @@ namespace Namespace
         }
     });
 
-            await client.SendMediaGroupAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMediaGroup(
+                chatId: callbackQuery.Message!.Chat.Id,
                 media: mediaGroup
             );
 
-            await client.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
+            await client.SendMessage(
+                chatId: callbackQuery.Message!.Chat.Id,
                 text: "Выберите опцию:",
                 replyMarkup: keyboard
             );
@@ -175,7 +175,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendExterior(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -189,7 +189,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendLandlord(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -212,7 +212,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendTelephone(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -226,7 +226,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendSchedule(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -240,7 +240,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendTelegram(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -252,8 +252,8 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
-        
-            return await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89024783356", "Павел", replyMarkup: keyboard);
+
+            return await client.SendContact(callbackQuery.Message!.Chat.Id, "89024783356", "Павел", replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendLocation(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -265,7 +265,7 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
-            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863710, 57.585971, replyMarkup: keyboard);
+            return await client.SendLocation(callbackQuery.Message!.Chat.Id, 58.863710, 57.585971, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendOtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -283,7 +283,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -313,7 +313,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Description(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -356,7 +356,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, fullDescription, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, fullDescription, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Schedule(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -371,7 +371,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2PhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -390,7 +390,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2OnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -409,7 +409,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2OnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -423,10 +423,10 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
-        
+
 
         public static async Task<Message> SendHouse2Location(CallbackQuery callbackQuery, TelegramBotClient client)
         {
@@ -438,7 +438,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 58.863757, 57.587193, replyMarkup: keyboard);
+            return await client.SendLocation(callbackQuery.Message!.Chat.Id, 58.863757, 57.587193, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2FAQ(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -453,7 +453,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text_with_link, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text_with_link, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Landlord(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -476,7 +476,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2OtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -494,7 +494,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Telephone(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -508,7 +508,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Telegram(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -520,7 +520,7 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
-            return await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89024783356", "Павел", replyMarkup: keyboard);
+            return await client.SendContact(callbackQuery.Message!.Chat.Id, "89024783356", "Павел", replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHouse2Rent(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -534,7 +534,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartment(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -560,7 +560,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentDescription(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -583,7 +583,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, fullDescription, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, fullDescription, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentSchedule(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -597,7 +597,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentPhotosAndVideos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -616,7 +616,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentOnlyPhotos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -636,7 +636,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentOnlyVideos(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -650,7 +650,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentRooms(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -664,7 +664,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentFeatures(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -678,7 +678,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentExterior(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -692,7 +692,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentLocation(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -705,7 +705,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendLocationAsync(callbackQuery.Message.Chat.Id, 16.45, 34.76, replyMarkup: keyboard);
+            return await client.SendLocation(callbackQuery.Message!.Chat.Id, 16.45, 34.76, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentFAQ(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -720,7 +720,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text_with_link, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text_with_link, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentLandlord(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -743,7 +743,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentOtherOptions(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -762,7 +762,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentTelephone(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -776,7 +776,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentTelegram(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -789,8 +789,8 @@ namespace Namespace
                     InlineKeyboardButton.WithCallbackData("Назад ⏪", "go_back")
                 }
             });
-            await client.SendContactAsync(callbackQuery.Message.Chat.Id, "89922210955", "Yaroslav");
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            await client.SendContact(callbackQuery.Message!.Chat.Id, "89922210955", "Yaroslav");
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendApartmentRent(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -804,7 +804,7 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard);
         }
 
         public static async Task<Message> SendHelp(CallbackQuery callbackQuery, TelegramBotClient client)
@@ -818,8 +818,9 @@ namespace Namespace
                 }
             });
 
-            return await client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, text, replyMarkup: keyboard, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
+            return await client.SendMessage(callbackQuery.Message!.Chat.Id, text, replyMarkup: keyboard, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
         }
 
     }
 }
+

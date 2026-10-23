@@ -361,3 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+credentials*.json
+client_secret*.json
+token.json/
+secrets*.json
+
+# Build and deployment archives must be produced by CI, not committed
+*.zip
